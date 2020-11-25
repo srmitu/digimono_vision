@@ -18,10 +18,10 @@ dt1=0
 dt2=0
 print("start")
 #安定状態になるための待ち時間
-time.sleep(2)
+#time.sleep(2)
 while True:
     #フレームを取得
-    frame = digimono_camera_frame.frame
+    frame = digimono_camera_frame.get_frame()
     #生のカメラデータは早めに出力する
     digimono_camera_frame.show_frame()
     #緑検出
@@ -63,7 +63,7 @@ while True:
     cv2.resizeWindow("Mask", 1000,800)
     cv2.imshow("Mask",mask)
 
-    digimono_camera_frame.end_cheack()
+    digimono_camera_frame.end_check()
     #if cv2.waitKey(25) & 0xFF == ord('q'):
     #    break
 
