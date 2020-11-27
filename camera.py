@@ -9,22 +9,22 @@ import camera_frame
 
 class digimono_camera(camera_frame.digimono_camera_frame):
 
-    def __init__(self):
+    def __init__(self, threshold):
         self.frame = cv2.imread('opencv.jpeg')
-        self.lock = RLock()
-        self.thread = Thread(target=self.mask_detect, args=())
-        self.thread.daemon = True
-        self.thread.start()
         #初期化
         self.cutout = 0
         self.mask = 0
-        
-        self.threshold=[]
+        self.threshold = threshold
         #赤色のときは閾値は２つ
         #それ以外のときは閾値は１つ
         self.contours = []
         self.point = []
         self.task = 0
+        
+        self.lock = RLock()
+        self.thread = Thread(target=self.mask_detect, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
     def __enter__(self):
         return self
@@ -86,10 +86,10 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                             self.point.append([x, y])
                     self.task =1
 
-    def in_frame(self, inFrame):
+    def put_frame(self, inFrame):
         self.frame = inFrame
 
-    def in_threshold(self, inThreshold):
+    def put_threshold(self, inThreshold):
         self.threshold = inThreshold
     def get_contours(self):
         return_contours = []
@@ -112,7 +112,7 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         with self.lock:
             return_task = self.task
         return return_task
-    def in_task(self, inTask):
+    def put_task(self, inTask):
         self.task = inTask
     def get_cutout(self):
         return self.cutout

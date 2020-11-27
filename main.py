@@ -8,9 +8,12 @@ import time
 #実際の環境によって変更する変数
 camera_num = 0
 
+#緑検出
+threshold = numpy.array([[85, 255, 230],[50, 45,35]])
+
 #使用するクラス
-digimono_camera = camera.digimono_camera()
 digimono_camera_frame = camera_frame.digimono_camera_frame(camera_num)
+digimono_camera = camera.digimono_camera(threshold)
 
 cal_time = 0
 display_time = 0
@@ -23,19 +26,15 @@ while True:
     #フレームを取得
     raw_frame = digimono_camera_frame.get_frame()
     frame = raw_frame.copy()
-    #生のカメラデータは早めに出力する
-    digimono_camera_frame.show_frame()
-    digimono_camera.in_frame(raw_frame)
-    #緑検出
-    threshold = numpy.array([[85, 255, 230],[50, 45,35]])
-    digimono_camera.in_threshold(threshold)
+    digimono_camera.put_frame(raw_frame)
+    
     while True:
         if(digimono_camera.get_task() == 1):
             break
     cutout = digimono_camera.get_cutout()
     contours = digimono_camera.get_contours()
     point = digimono_camera.get_point()
-    digimono_camera.in_task(0)
+    digimono_camera.put_task(0)
     cv2.rectangle(frame, (50,50), (150,150), (250,0,0), 3)
     cv2.rectangle(frame, (500,50), (600,150), (250,0,0), 3)
     for i in range(len(contours)):
@@ -67,6 +66,7 @@ while True:
         dt=str(dt2-dt1)
         cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
     # 結果表示
+    digimono_camera_frame.show_frame()
     cv2.namedWindow("FrameEdit", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("FrameEdit", 1000,800)
     cv2.imshow("FrameEdit",frame)
