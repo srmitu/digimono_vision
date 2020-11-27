@@ -3,18 +3,19 @@ import cv2
 import time
 
 class digimono_camera_frame(object):
-    #ret: True時はカメラの使用許可    
-    ret = 0
-    #frame: 映像を保存. 初期化のため,0が入っている. 実際に使用するときは少し待ってから使用する
-    frame = cv2.imread('opencv.jpeg')
-    #resize_vertical, resize_wide: 初期の画面の大きさを定義する
-    resize_vertical = 300
-    resize_wide = 400
     def __init__(self, camera_num):
+        self.frame = cv2.imread('opencv.jpeg')
+        #ret: True時はカメラの使用許可    
+        self.ret = False
+        #resize_vertical, resize_wide: 初期の画面の大きさを定義する
+        self.resize_vertical = 300
+        self.resize_wide = 400
+        
         self.capture = cv2.VideoCapture(camera_num)
         self.thread = Thread(target = self.update, args=())
         self.thread.daemon = True
         self.thread.start()
+        
 
     def update(self):
         while self.capture.isOpened():
@@ -40,6 +41,6 @@ class digimono_camera_frame(object):
     def get_ret(self):
         return self.ret
 
-    def import_resize(self, vertical, wide):
+    def put_resize(self, vertical, wide):
         self.resize_wide = wide
         self.resize_vertical = vertical
