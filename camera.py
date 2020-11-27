@@ -30,7 +30,7 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         return self
     def __exit__(self, ex_type, ex_value, trace):
         pass
-        #print("exit")0
+        #print("exit")
     #マスクを作成し、抽出した数とその中心点を求める
     def mask_detect(self):
         while True:
@@ -51,7 +51,7 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                 mask2 = cv2.inRange(hsv, hsv_min, hsv_max)
                 
                 self.mask = mask1 + mask2
-                
+            
             if len(self.threshold) > 0:
                 #neiborhood = np.array([[0, 1, 0],
                 #                       [1, 1, 1],
@@ -76,7 +76,6 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                         area = cv2.contourArea(all_contours[i])
                         if(area > 700):
                             self.contours.append(all_contours[i])
-                    #print(self.contours)
                     #位置を格納する変数の定義
                     self.point = []
                     for i in range(len(self.contours)):
