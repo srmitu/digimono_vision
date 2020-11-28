@@ -1,5 +1,6 @@
 import camera
 import camera_frame
+import camera_position
 import cv2
 import numpy
 import datetime
@@ -14,6 +15,16 @@ threshold = []
 threshold.append(numpy.array([[85, 255, 230],[50, 45,35]]))
 threshold.append(numpy.array([[145, 180, 170],[95, 45,35]]))
 
+#枠座標
+shape = []
+shape.append(numpy.array([[100,100],[50,50]]))
+shape.append(numpy.array([[550,100],[50,50]]))
+
+#モード
+mode = []
+mode.append(0)
+mode.append(1)
+
 draw_color = []
 for i in range(2):
     threshold_item = threshold[i]
@@ -26,11 +37,13 @@ for i in range(2):
 #使用するクラス
 digimono_camera_frame = camera_frame.digimono_camera_frame(camera_num)
 digimono_camera_list = []
+digimono_camera_position_list = []
 for num_list in range(2):
     digimono_camera_list.append(camera.digimono_camera(threshold[num_list], draw_color[num_list]))
-
-cal_time = 0
-display_time = 0
+for num_list in range(2):
+    digimono_camera_position_list.append(camera_position.digimono_camera_position(mode[num_list], 0, shape[num_list], 0, draw_color[0]))
+cal_time = False
+display_time = False
 dt1=0
 dt2=0
 print("start")
@@ -51,30 +64,57 @@ while True:
         frame = num_list.draw_contours(frame)
         point.append(num_list.get_point())
         num_list.put_task(0)
-    cv2.rectangle(frame, (50,50), (150,150), (250,0,0), 3)
-    cv2.rectangle(frame, (500,50), (600,150), (250,0,0), 3)
+    num_mode = 0
+    for num_list in digimono_camera_position_list:
+        num_list.put_position(point)
+        frame = num_list.draw_point(frame)
+        if(num_mode == 0 and num_list.get_in_shape() == True):
+            if(cal_time == False):
+                cal_time = True
+                display_time = True
+                num_list.put_cal_time(True)
+                dt1 = num_list.get_enter_time()
+
+        elif(num_mode == 1 and num_list.get_in_shape() == True):
+            if(cal_time == True):
+                cal_time = False
+                num_list.put_cal_time(True)
+                dt2 = num_list.get_enter_time()
+        num_mode += 1
+        frame = num_list.draw_shape(frame)
+    
+    '''
     for num_color in range(2):
         for num_point in range(len(point[num_color])):
         
             #start
+            
             if(point[num_color][num_point][0]<150 and point[num_color][num_point][0]>50  and point[num_color][num_point][1]<150 and point[num_color][num_point][1]>50):
                 cv2.circle(frame, tuple(point[num_color][num_point]), 2, (0,0,250),20)
                 if(cal_time==0):
                     cal_time=1
                     display_time=1
                     dt1=datetime.datetime.now()
+                    
+
+
             #end
             elif(point[num_color][num_point][0]<600 and point[num_color][num_point][0]>500  and point[num_color][num_point][1]<150 and point[num_color][num_point][1]>50):
                 cv2.circle(frame, tuple(point[num_color][num_point]), 2, (0,0,250),20)
-                if(cal_time==1):
-                    cal_time=0
+                if(cal_time==True):
+                    cal_time=False
             else:
                 cv2.circle(frame, tuple(point[num_color][num_point]), 2, tuple(draw_color[num_color]), 4)
-        
-    if(cal_time==0 and cv2.waitKey(1) == 13):
-        display_time=0
-    if(display_time==1):
-        if(cal_time==1):
+        '''
+    for num_point in range(len(point[1])):
+        cv2.circle(frame, tuple(point[1][num_point]), 2, tuple(draw_color[1]), 4)
+    if(cal_time==False):
+        if(cv2.waitKey(5) == 13):
+            display_time=False
+        for num_list in digimono_camera_position_list:
+            num_list.put_cal_time(False)
+    if(display_time==True):
+        if(cal_time==True):
             dt2=datetime.datetime.now()
         #print(dt2 - dt1)
         dt=str(dt2-dt1)
@@ -84,6 +124,8 @@ while True:
     cv2.namedWindow("FrameEdit", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("FrameEdit", 1000,800)
     cv2.imshow("FrameEdit",frame)
+    num_screen = 0
     for num_list in digimono_camera_list:
-        num_list.show_cutout(num_list)
+        num_list.show_cutout(num_screen)
+        num_screen += 1
     digimono_camera_frame.end_check()
