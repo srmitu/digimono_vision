@@ -83,29 +83,6 @@ while True:
         num_mode += 1
         frame = num_list.draw_shape(frame)
     
-    '''
-    for num_color in range(2):
-        for num_point in range(len(point[num_color])):
-        
-            #start
-            
-            if(point[num_color][num_point][0]<150 and point[num_color][num_point][0]>50  and point[num_color][num_point][1]<150 and point[num_color][num_point][1]>50):
-                cv2.circle(frame, tuple(point[num_color][num_point]), 2, (0,0,250),20)
-                if(cal_time==0):
-                    cal_time=1
-                    display_time=1
-                    dt1=datetime.datetime.now()
-                    
-
-
-            #end
-            elif(point[num_color][num_point][0]<600 and point[num_color][num_point][0]>500  and point[num_color][num_point][1]<150 and point[num_color][num_point][1]>50):
-                cv2.circle(frame, tuple(point[num_color][num_point]), 2, (0,0,250),20)
-                if(cal_time==True):
-                    cal_time=False
-            else:
-                cv2.circle(frame, tuple(point[num_color][num_point]), 2, tuple(draw_color[num_color]), 4)
-        '''
     for num_point in range(len(point[1])):
         cv2.circle(frame, tuple(point[1][num_point]), 2, tuple(draw_color[1]), 4)
     if(cal_time==False):
