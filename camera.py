@@ -23,8 +23,8 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         self.draw_color = tuple(draw_color)
         self.resize_vertical = 600
         self.resize_wide =720
+        self.permit_area
         
-        self.lock = RLock()
         self.thread = Thread(target=self.mask_detect, args=())
         self.thread.daemon = True
         self.thread.start()
@@ -70,23 +70,21 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                 #輪郭の抽出
                 all_contours, hierarchy = cv2.findContours(self.mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 #imgとマスクの合算
-                #self.mask = cv2.bitwise_and(hsv, hsv, mask=self.mask)
                 self.cutout = cv2.bitwise_and(camera_frame, camera_frame, mask=self.mask)
-                with self.lock:
-                    #必要な輪郭のみ抽出する
-                    self.contours = []
-                    for i in range(len(all_contours)):
-                        area = cv2.contourArea(all_contours[i])
-                        if(area > 700):
-                            self.contours.append(all_contours[i])
-                    #位置を格納する変数の定義
-                    self.point = []
-                    for i in range(len(self.contours)):
-                        mu = cv2.moments(self.contours[i])
-                        if int(mu["m00"]) != 0:
-                            x,y = int(mu["m10"]/mu["m00"]), int(mu["m01"]/mu["m00"])
-                            self.point.append([x, y])
-                    self.task =1
+                #必要な輪郭のみ抽出する
+                self.contours = []
+                for i in range(len(all_contours)):
+                    area = cv2.contourArea(all_contours[i])
+                    if(area > self.permit_area):
+                        self.contours.append(all_contours[i])
+                #位置を格納する変数の定義
+                self.point = []
+                for i in range(len(self.contours)):
+                    mu = cv2.moments(self.contours[i])
+                    if int(mu["m00"]) != 0:
+                        x,y = int(mu["m10"]/mu["m00"]), int(mu["m01"]/mu["m00"])
+                        self.point.append([x, y])
+                self.task =1
 
     def put_frame(self, inFrame):
         self.frame = inFrame
@@ -100,8 +98,6 @@ class digimono_camera(camera_frame.digimono_camera_frame):
             return_contours = self.contours
         return return_contours
 
-    def get_lock(self):
-        return self.lock
 
     def get_point(self):
         return_point = []
