@@ -23,7 +23,7 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         self.draw_color = tuple(draw_color)
         self.resize_vertical = 600
         self.resize_wide =720
-        self.permit_area
+        self.permit_area = 500
         
         self.thread = Thread(target=self.mask_detect, args=())
         self.thread.daemon = True
@@ -94,22 +94,19 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         self.threshold = inThreshold
     def get_contours(self):
         return_contours = []
-        with self.lock:
-            return_contours = self.contours
+        return_contours = self.contours
         return return_contours
 
 
     def get_point(self):
         return_point = []
-        with self.lock:
-            return_point = self.point
+        return_point = self.point
         return return_point
 
     def get_mask(self):
         return self.mask
     def get_task(self):
-        with self.lock:
-            return_task = self.task
+        return_task = self.task
         return return_task
     def put_task(self, inTask):
         self.task = inTask
