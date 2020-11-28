@@ -12,6 +12,8 @@ class digimono_camera_frame(object):
         self.resize_wide = 400
         
         self.capture = cv2.VideoCapture(camera_num)
+        #遅延抑制
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self.thread = Thread(target = self.update, args=())
         self.thread.daemon = True
         self.thread.start()
@@ -25,9 +27,9 @@ class digimono_camera_frame(object):
 
     #毎フレーム読み出さなくてはならないメソッド
     def end_check(self):
-        if cv2.waitKey(1) == ord('q'):
+        if cv2.waitKey(1) == 27:#ESC key
             self.capture.release()
-            cv2.destoryAllWindows()
+            cv2.destroyAllWindows()
             exit(1)
 
     def show_frame(self):
