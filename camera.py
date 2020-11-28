@@ -59,14 +59,13 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                 self.mask = mask1 + mask2
             
             if len(self.threshold) > 0:
+                
                 neiborhood = np.array([[0, 1, 0],
                                        [1, 1, 1],
                                        [0, 1, 0]],
                                        np.uint8)
-
-                self.mask = cv2.dilate(self.mask, neiborhood, iterations = 2)
-                self.mask = cv2.erode(self.mask, neiborhood, iterations = 2)
-
+                
+                self.mask = cv2.morphologyEx(self.mask, cv2.MORPH_OPEN, neiborhood)
                 #輪郭の抽出
                 all_contours, hierarchy = cv2.findContours(self.mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 #imgとマスクの合算
