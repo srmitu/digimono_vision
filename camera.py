@@ -9,7 +9,7 @@ import camera_frame
 
 class digimono_camera(camera_frame.digimono_camera_frame):
 
-    def __init__(self, threshold):
+    def __init__(self, threshold, draw_color):
         self.frame = cv2.imread('opencv.jpeg')
         #初期化
         self.cutout = 0
@@ -20,6 +20,9 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         self.contours = []
         self.point = []
         self.task = 0
+        self.draw_color = tuple(draw_color)
+        self.resize_vertical = 600
+        self.resize_wide =720
         
         self.lock = RLock()
         self.thread = Thread(target=self.mask_detect, args=())
@@ -53,13 +56,13 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                 self.mask = mask1 + mask2
             
             if len(self.threshold) > 0:
-                #neiborhood = np.array([[0, 1, 0],
-                #                       [1, 1, 1],
-                #                       [0, 1, 0]],
-                #                       np.uint8)
+                neiborhood = np.array([[0, 1, 0],
+                                       [1, 1, 1],
+                                       [0, 1, 0]],
+                                       np.uint8)
 
-                #self.mask = cv2.dilate(self.mask, neiborhood, iterations = 2)
-                #self.mask = cv.erode(self.mask, neiborhood, iterations = 2)
+                self.mask = cv2.dilate(self.mask, neiborhood, iterations = 2)
+                self.mask = cv2.erode(self.mask, neiborhood, iterations = 2)
 
                 #輪郭の抽出
                 all_contours, hierarchy = cv2.findContours(self.mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -115,3 +118,25 @@ class digimono_camera(camera_frame.digimono_camera_frame):
         self.task = inTask
     def get_cutout(self):
         return self.cutout
+
+    def show_mask(self, num_screen):
+        title_mask = "Mask" + str(num_screen)
+        cv2.namedWindow(title_mask, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(title_mask, self.resize_wide, self.resize_vertical)
+        cv2.imshow(title_mask, self.mask)
+
+    def show_cutout(self, num_screen):
+        title_cutout = "Cutout" + str(num_screen)
+        cv2.namedWindow(title_cutout, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(title_cutout, self.resize_wide, self.resize_vertical)
+        cv2.imshow(title_cutout, self.cutout)
+
+    def draw_contours(self, edit_frame):
+        return_edit_frame = edit_frame
+        for num_contours in range(len(self.contours)):
+            return_edit_frame = cv2.drawContours(edit_frame, self.contours, num_contours, self.draw_color, 3)
+        return return_edit_frame
+
+    def put_resize(self, vertical, wide):
+        self.resize_wide = wide
+        self.resize_vertical = vertical
