@@ -10,6 +10,8 @@ class digimono_camera_frame(object):
         #resize_vertical, resize_wide: 初期の画面の大きさを定義する
         self.resize_vertical = 300
         self.resize_wide = 400
+        self.edit_resize_vertical = 800
+        self.edit_resize_wide = 1000
         
         self.capture = cv2.VideoCapture(camera_num)
         #遅延抑制
@@ -36,6 +38,10 @@ class digimono_camera_frame(object):
         cv2.namedWindow("frame", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("frame", self.resize_wide, self.resize_vertical)
         cv2.imshow("frame", self.frame)
+    def show_edit_frame(self, edit_frame):
+        cv2.namedWindow("FrameEdit", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("FrameEdit", self.edit_resize_wide, self.edit_resize_vertical)
+        cv2.imshow("FrameEdit",edit_frame)
 
     def get_frame(self):
         return self.frame
@@ -46,3 +52,6 @@ class digimono_camera_frame(object):
     def put_resize(self, vertical, wide):
         self.resize_wide = wide
         self.resize_vertical = vertical
+    def put_edit_resize(self, vertical, wide):
+        self.edit_resize_wide = wide
+        self.edit_resize_vertical = vertical
