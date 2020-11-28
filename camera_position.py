@@ -70,7 +70,7 @@ class digimono_camera_position(object):
         self.position = point[self.color]
         self.position_detect()
 
-    def draw_point(self, frame):
+    def draw_position(self, frame):
         return_frame = frame
         for num_position in range(len(self.position)):
             return_frame = cv2.circle(frame, tuple(self.position[num_position]), 5, self.draw_color, -1)
@@ -78,7 +78,7 @@ class digimono_camera_position(object):
             return_frame = cv2.circle(frame, tuple(self.in_shape_position[num_in_shape_position]), 20, self.draw_color, -1)
         return return_frame
 
-    def draw_position(self, frame):
+    def draw_in_shape_position(self, frame):
         return_frame = frame
         for num_position in range(len(self.in_shape_position)):
             return_frame = cv2.circle(frame, tuple(self.in_shape_position[num_point]), 20, self.draw_color, -1)

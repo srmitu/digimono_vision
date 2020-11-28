@@ -67,7 +67,7 @@ while True:
     num_mode = 0
     for num_list in digimono_camera_position_list:
         num_list.put_position(point)
-        frame = num_list.draw_point(frame)
+        frame = num_list.draw_position(frame)
         if(num_mode == 0 and num_list.get_in_shape() == True):
             if(cal_time == False):
                 cal_time = True
