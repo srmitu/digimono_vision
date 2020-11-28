@@ -9,7 +9,7 @@ import colorsys
 
 #実際の環境によって変更する変数
 camera_num = 0
-
+digimono_camera_frame = camera_frame.digimono_camera_frame(camera_num)
 #閾値
 threshold = []
 threshold.append(numpy.array([[85, 255, 230],[50, 45,35]]))
@@ -35,7 +35,6 @@ for i in range(2):
     draw_color.append([b*255, g*255, r*255])
         
 #使用するクラス
-digimono_camera_frame = camera_frame.digimono_camera_frame(camera_num)
 digimono_camera_list = []
 digimono_camera_position_list = []
 for num_list in range(2):
@@ -99,9 +98,7 @@ while True:
         cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
     # 結果表示
     digimono_camera_frame.show_frame()
-    cv2.namedWindow("FrameEdit", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("FrameEdit", 1000,800)
-    cv2.imshow("FrameEdit",frame)
+    digimono_camera_frame.show_edit_frame(frame)
     num_screen = 0
     for num_list in digimono_camera_list:
         num_list.show_cutout(num_screen)
