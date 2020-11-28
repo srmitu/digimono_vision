@@ -37,6 +37,9 @@ class digimono_camera(camera_frame.digimono_camera_frame):
     #マスクを作成し、抽出した数とその中心点を求める
     def mask_detect(self):
         while True:
+            while True:
+                if(self.task == 0):
+                    break
             #hsv色空間に変換
             camera_frame = self.frame
             hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
@@ -69,9 +72,6 @@ class digimono_camera(camera_frame.digimono_camera_frame):
                 #imgとマスクの合算
                 #self.mask = cv2.bitwise_and(hsv, hsv, mask=self.mask)
                 self.cutout = cv2.bitwise_and(camera_frame, camera_frame, mask=self.mask)
-                while True:
-                    if(self.task == 0):
-                        break
                 with self.lock:
                     #必要な輪郭のみ抽出する
                     self.contours = []
@@ -90,6 +90,7 @@ class digimono_camera(camera_frame.digimono_camera_frame):
 
     def put_frame(self, inFrame):
         self.frame = inFrame
+        self.task = 0
 
     def put_threshold(self, inThreshold):
         self.threshold = inThreshold
