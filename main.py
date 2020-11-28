@@ -47,12 +47,10 @@ display_time = False
 dt1=0
 dt2=0
 print("start")
+#フレームを取得
+raw_frame = digimono_camera_frame.get_frame()
 while True:
-    #フレームを取得
-    raw_frame = digimono_camera_frame.get_frame()
     frame = raw_frame.copy()
-    for num_list in digimono_camera_list:
-        num_list.put_frame(raw_frame)
     for num_list in digimono_camera_list:
         while True:
             if(num_list.get_task() == 1):
@@ -63,7 +61,10 @@ while True:
         cutout.append(num_list.get_cutout())
         frame = num_list.draw_contours(frame)
         point.append(num_list.get_point())
-        num_list.put_task(0)
+    #フレームを取得
+    raw_frame = digimono_camera_frame.get_frame()
+    for num_list in digimono_camera_list:
+        num_list.put_frame(raw_frame)
     num_mode = 0
     for num_list in digimono_camera_position_list:
         num_list.put_position(point)
