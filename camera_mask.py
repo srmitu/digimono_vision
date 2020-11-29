@@ -7,7 +7,7 @@ from threading import RLock
 import time
 import camera_frame
 
-class digimono_camera(camera_frame.digimono_camera_frame):
+class digimono_camera_mask(camera_frame.digimono_camera_frame):
 
     def __init__(self, threshold, draw_color):
         self.frame = cv2.imread('opencv.jpeg')

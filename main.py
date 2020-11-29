@@ -1,4 +1,4 @@
-import camera
+import camera_mask
 import camera_frame
 import camera_position
 import cv2
@@ -35,10 +35,10 @@ for i in range(2):
     draw_color.append([b*255, g*255, r*255])
         
 #使用するクラス
-digimono_camera_list = []
+digimono_camera_mask_list = []
 digimono_camera_position_list = []
 for num_list in range(2):
-    digimono_camera_list.append(camera.digimono_camera(threshold[num_list], draw_color[num_list]))
+    digimono_camera_mask_list.append(camera_mask.digimono_camera_mask(threshold[num_list], draw_color[num_list]))
 for num_list in range(2):
     digimono_camera_position_list.append(camera_position.digimono_camera_position(mode[num_list], 0, shape[num_list], 0, draw_color[0]))
 cal_time = False
@@ -50,19 +50,19 @@ print("start")
 raw_frame = digimono_camera_frame.get_frame()
 while True:
     frame = raw_frame.copy()
-    for num_list in digimono_camera_list:
+    for num_list in digimono_camera_mask_list:
         while True:
             if(num_list.get_task() == 1):
                 break
     cutout = []
     point = []
-    for num_list in digimono_camera_list:
+    for num_list in digimono_camera_mask_list:
         cutout.append(num_list.get_cutout())
         frame = num_list.draw_contours(frame)
         point.append(num_list.get_point())
     #フレームを取得
     raw_frame = digimono_camera_frame.get_frame()
-    for num_list in digimono_camera_list:
+    for num_list in digimono_camera_mask_list:
         num_list.put_frame(raw_frame)
     num_mode = 0
     for num_list in digimono_camera_position_list:
@@ -100,7 +100,7 @@ while True:
     digimono_camera_frame.show_frame()
     digimono_camera_frame.show_edit_frame(frame)
     num_screen = 0
-    for num_list in digimono_camera_list:
+    for num_list in digimono_camera_mask_list:
         num_list.show_cutout(num_screen)
         num_screen += 1
     digimono_camera_frame.end_check()
