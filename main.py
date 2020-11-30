@@ -6,64 +6,101 @@ import numpy
 import datetime
 import time
 import colorsys
+from multiprocessing import Process, Manager, Value, Array, Pool
 
 #実際の環境によって変更する変数
 camera_num = 0
-digimono_camera_frame = camera_frame.digimono_camera_frame(camera_num)
+max_mask_process = 2
+#設定ファイルを作成するまで必要な変数群
+num_color = 3
+num_shape = 3
+
 #閾値
 threshold = []
 threshold.append(numpy.array([[85, 255, 230],[50, 45,35]]))
-threshold.append(numpy.array([[145, 180, 170],[95, 45,35]]))
-
+threshold.append(numpy.array([[140, 255, 255],[100, 100, 100]]))
+threshold.append(numpy.array([[15, 255, 255],[0, 100, 100],[180, 255, 255],[160, 100, 100]]))
 #枠座標
 shape = []
 shape.append(numpy.array([[100,100],[50,50]]))
 shape.append(numpy.array([[550,100],[50,50]]))
-
+shape.append(numpy.array([[550,300],[100,50]]))
 #モード
+#0:start area
+#1:end area
 mode = []
 mode.append(0)
 mode.append(1)
-
+mode.append(3)
+#描画する色(閾値から決定)
 draw_color = []
-for i in range(2):
+for i in range(num_color):
     threshold_item = threshold[i]
     h_ave = (threshold_item[0,0] + threshold_item[1,0]) / 2
-    s_ave = (threshold_item[0,1] + threshold_item[1,1]) / 2
-    v_ave = (threshold_item[0,2] + threshold_item[1,2]) / 2
+    s_ave = threshold_item[0,1]
+    v_ave = threshold_item[0,2]
     r,g,b = colorsys.hsv_to_rgb(h_ave/180 , s_ave/255, v_ave/255)
     draw_color.append([b*255, g*255, r*255])
-        
 #使用するクラス
+digimono_camera_frame = camera_frame.digimono_camera_frame(camera_num)
 digimono_camera_mask_list = []
 digimono_camera_position_list = []
-for num_list in range(2):
+for num_list in range(num_color):
     digimono_camera_mask_list.append(camera_mask.digimono_camera_mask(threshold[num_list], draw_color[num_list]))
-for num_list in range(2):
-    digimono_camera_position_list.append(camera_position.digimono_camera_position(mode[num_list], 0, shape[num_list], 0, draw_color[0]))
+for num_list in range(num_color-1):
+    digimono_camera_position_list.append(camera_position.digimono_camera_position(mode[num_list], 0, shape[num_list], num_list, draw_color[num_list]))
+num_list = 2
+digimono_camera_position_list.append(camera_position.digimono_camera_position(mode[num_list], 1, shape[num_list], num_list, draw_color[num_list]))
+#初期化
 cal_time = False
 display_time = False
 dt1=0
 dt2=0
-print("start")
-#フレームを取得
+#初期化(共有変数)
+shared_contours = []
+shared_point = []
+for num in range(num_color):
+    shared_contours.append(0)
+    shared_point.append(0)
+for num in range(num_color):#共有設定
+    shared_contours[num] = Manager().list()
+    shared_point[num] = Manager().list()
+#フレームを取得(初回のみ)
 raw_frame = digimono_camera_frame.get_frame()
+#初回のみmaskのプロセスを無限ループ外で実行
+mask_process_list = []
+#mask_process = Pool(max_mask_process)
+for num_process in range(num_color):
+    #mask_process.apply_async(digimono_camera_mask_list[num_process].mask_detect, args=(shared_array))
+    mask_process = Process(target=digimono_camera_mask_list[num_process].mask_detect, args=(raw_frame, shared_contours[num_process], shared_point[num_process]))
+    mask_process.start()
+    mask_process_list.append(mask_process)
 while True:
-    frame = raw_frame.copy()
-    for num_list in digimono_camera_mask_list:
-        while True:
-            if(num_list.get_task() == 1):
-                break
-    cutout = []
-    point = []
-    for num_list in digimono_camera_mask_list:
-        cutout.append(num_list.get_cutout())
-        frame = num_list.draw_contours(frame)
-        point.append(num_list.get_point())
+    frame = digimono_camera_frame.get_frame().copy()
+    #maskのサブプロセスが終わるまで待機(初回は無限ループ外で実行されているのを待つ)
+    for mask_process in mask_process_list:
+        #mask_process.close()
+        dt5 = datetime.datetime.now()
+        mask_process.join()
+        print(datetime.datetime.now() - dt5)
+    #print(shared_i.value)
+    contours = shared_contours.copy()
+    point = shared_point.copy()
     #フレームを取得
     raw_frame = digimono_camera_frame.get_frame()
-    for num_list in digimono_camera_mask_list:
-        num_list.put_frame(raw_frame)
+    #共有する変数を再定義(初期化)
+    for num in range(num_color):#共有設定
+        shared_contours[num] = Manager().list()
+        shared_point[num] = Manager().list()
+    #maskのサブプロセスを実行
+    mask_process_list = []
+    i#mask_process = Pool(max_mask_process)
+    for num_process in range(num_color):
+        #mask_process.apply_async(digimono_camera_mask_list[num_process].mask_detect, args=(shared_array))
+        mask_process = Process(target=digimono_camera_mask_list[num_process].mask_detect, args=(raw_frame, shared_contours[num_process], shared_point[num_process]))
+        mask_process.start()
+        mask_process_list.append(mask_process)
+    #重心が枠に貼っているか確認
     num_mode = 0
     for num_list in digimono_camera_position_list:
         num_list.put_position(point)
@@ -83,8 +120,6 @@ while True:
         num_mode += 1
         frame = num_list.draw_shape(frame)
     
-    for num_point in range(len(point[1])):
-        cv2.circle(frame, tuple(point[1][num_point]), 2, tuple(draw_color[1]), 4)
     if(cal_time==False):
         if(cv2.waitKey(5) == 13):
             display_time=False
@@ -99,8 +134,10 @@ while True:
     # 結果表示
     digimono_camera_frame.show_frame()
     digimono_camera_frame.show_edit_frame(frame)
+    '''
     num_screen = 0
     for num_list in digimono_camera_mask_list:
         num_list.show_cutout(num_screen)
         num_screen += 1
+    '''
     digimono_camera_frame.end_check()
