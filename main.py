@@ -37,7 +37,7 @@ shape.append(numpy.array([[550,300],[100,50]]))
 mode = []
 mode.append(0)
 mode.append(1)
-mode.append(3)
+mode.append(2)
 #positionのプロセスで判定する色の番号
 color = []
 color.append(0)
@@ -82,7 +82,6 @@ cal_time = False
 display_time = False
 dt1=0
 dt2=0
-#初期化(共有変数)
 shared_contours = []
 shared_mask_point = []
 shared_position_point = []
@@ -90,7 +89,7 @@ shared_mask_task = []
 shared_in_shape_position = []
 shared_position_task = []
 shared_state = []
-shared_cal_time = []
+error_start_time = []
 for num in range(num_color):
     shared_contours.append(0)
     shared_mask_point.append(0)
@@ -104,12 +103,11 @@ for num in range(num_shape):
     shared_in_shape_position.append(0)
     shared_position_task.append(0)
     shared_state.append(0)
-    shared_cal_time.append(0)
+    error_start_time.append(0)
     shared_in_shape_position[num] = Manager().list()
     shared_position_task[num] = Value('b')
     shared_state[num] = Value('l', 0)
-    shared_cal_time[num] = Value('b')
-    shared_cal_time[num] = 0
+    error_start_time[num] = 0
 
 #フレームを取得(初回のみ)
 raw_frame = digi_frame.get_frame()
@@ -124,10 +122,9 @@ for num in range(num_color):
     p_mask.start()
     p_mask_l.append(p_mask)
 #positionのプロセスを生成
-#shared_position_point = shared_mask_point
 p_position_l = []
 for num in range(num_shape):
-    p_position = Process(target=digi_position_l[num].position_detect, args=(shared_position_point[color[num]], shared_cal_time[num], shared_in_shape_position[num], shared_position_task[num], shared_state[num], mode[num], type_shape[num], shape[num]))
+    p_position = Process(target=digi_position_l[num].position_detect, args=(shared_position_point[color[num]], shared_in_shape_position[num], shared_position_task[num], shared_state[num], type_shape[num], shape[num]))
     p_position.daemon = True
     p_position.start()
     p_position_l.append(p_position)
@@ -186,21 +183,26 @@ while(digi_frame.get_ret() == True):
     for num in range(num_shape):
         digi_position_l[num].draw_in_shape_position(frame, in_shape_position[num])
     #重心が枠に貼っているか確認
-    num_mode = 0
-    for num_list in digi_position_l:
-        if(mode[num_mode] == 0 and state[num_mode] == ord('r')):#rise
+    for num in range(num_shape):
+        if(mode[num] == 0 and state[num] == ord('r')):#rise
             if(cal_time == False):
                 cal_time = True
                 display_time = True
                 dt1 = datetime.datetime.now()
 
-        elif(mode[num_mode] == 1 and state[num_mode] == ord('r')):#rise
+        elif(mode[num] == 1 and state[num] == ord('r')):#rise
             if(cal_time == True):
                 cal_time = False
                 dt2 = datetime.datetime.now()
+        elif(mode[num] == 2):
+            if(state[num] == ord('i')):
+                error_time = datetime.datetime.now()-error_start_time[num]
+                if(error_time.seconds >= 60):
+                    print(num, "ERROR")
+            else:
+                error_start_time[num] = datetime.datetime.now()
 
-        num_mode += 1
-        frame = num_list.draw_shape(frame)
+        frame = digi_position_l[num].draw_shape(frame)
     #サイクルタイム計算の処理
     if(cal_time == False):
         if(cv2.waitKey(5) == 13):#Enter key
@@ -211,19 +213,6 @@ while(digi_frame.get_ret() == True):
         #print(dt2 - dt1)
         dt=str(dt2-dt1)
         cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
-    #計算するモードかそうでないか設定する
-    for num in range(len(shared_cal_time)):
-        if(cal_time == False):
-            if(mode[num] == 0):
-                shared_cal_time[num] = False
-            elif(mode[num] == 1):
-                shared_cal_time[num] = True
-        else:
-            if(mode[num] == 0):
-                shared_cal_time[num] = True
-            elif(mode[num] == 1):
-                shared_cal_time[num] = False
-
     # 結果表示
     digi_frame.show_edit_frame(frame)
 
