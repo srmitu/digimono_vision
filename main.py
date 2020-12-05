@@ -84,6 +84,7 @@ dt2=0
 #初期化(共有変数)
 shared_contours = []
 shared_mask_point = []
+shared_position_point = []
 shared_mask_task = []
 shared_in_shape_position = []
 shared_position_task = []
@@ -93,9 +94,11 @@ for num in range(num_color):
     shared_contours.append(0)
     shared_mask_point.append(0)
     shared_mask_task.append(0)
+    shared_position_point.append(0)
     shared_contours[num] = Manager().list()
     shared_mask_point[num] = Manager().list()
     shared_mask_task[num] = Value('i', 0)
+    shared_position_point[num] = Manager().list()
 for num in range(num_shape):
     shared_in_shape_position.append(0)
     shared_position_task.append(0)
@@ -120,7 +123,7 @@ for num in range(num_color):
     p_mask.start()
     p_mask_l.append(p_mask)
 #positionのプロセスを生成
-shared_position_point = shared_mask_point
+#shared_position_point = shared_mask_point
 p_position_l = []
 for num in range(num_shape):
     p_position = Process(target=digi_position_l[num].position_detect, args=(shared_position_point[color[num]], shared_cal_time[num], shared_in_shape_position[num], shared_position_task[num], shared_state[num], mode[num], type_shape[num], shape[num]))
@@ -128,7 +131,7 @@ for num in range(num_shape):
     p_position.start()
     p_position_l.append(p_position)
 
-#イベントのセット
+#子プロセスの無限ループ内の処理を開始させる
 for num in range(num_color):
     shared_mask_task[num].value = 0
 for num in range(num_shape):
@@ -136,6 +139,7 @@ for num in range(num_shape):
 
 #無限ループ
 while True:
+    #frame = raw_frame.copy()
     #maskのサブプロセスが終わるまで待機(初回は無限ループ外で実行されているのを待つ)
     dt4 = datetime.datetime.now()
     for num in range(num_color):
@@ -144,9 +148,17 @@ while True:
         dt10 = datetime.datetime.now()
         while shared_mask_task[num].value == 0:
             pass
-        for num_pop in range(len(shared_contours[num])):
+        len_shared_contours = len(shared_contours[num])
+        len_shared_mask_point = len(shared_mask_point[num])
+        len_shared_position_point = len(shared_position_point[num])
+        for num_pop in range(len_shared_contours):
             contours[num].append(shared_contours[num].pop(0))
+        for num_pop in range(len_shared_mask_point):
             point[num].append(shared_mask_point[num].pop(0))
+        for num_pop in range(len_shared_position_point):
+            shared_position_point[num].pop(0)
+        for num_pop in range(len_shared_contours):
+            shared_position_point[num].append(point[num][num_pop])
         #print("mask_process", datetime.datetime.now() - dt10)
     #print("mask", datetime.datetime.now() - dt4)
     #フレームを取得
@@ -154,8 +166,8 @@ while True:
     shared_hsv.append(cv2.cvtColor(raw_frame, cv2.COLOR_BGR2HSV))
     shared_hsv.pop(0)
     frame = raw_frame.copy()
-    shared_position_point = point
     shared_cal_time = cal_time_a
+    #shared_position_point = point
     #positionのプロセスに処理を開始させる
     for num in range(num_shape):
         shared_position_task[num].value = 0
@@ -167,14 +179,21 @@ while True:
     #見つかった輪郭の重心を描く
     for num in range(num_color):
         digi_mask_l[num].draw_point(frame, point[num])
+        digi_mask_l[num].draw_contours(frame, contours[num], 2)
 
     #shapeのサブプロセスが終わるまで待機
-    for p_position in p_position_l:
+    for num in range(num_shape):
         while shared_position_task[num].value == 0:
                 pass
-        for num_pop in range(len(shared_in_shape_position)):
-            in_shape_position[num].append(shared_in_shape_position.pop(0))
-            state[num].append(shared_state.pop(0))
+        len_shared_in_shape_position = len(shared_in_shape_position[num])
+        #len_shared_state = len(shared_state[num])
+        for num_pop in range(len_shared_in_shape_position):
+            in_shape_position[num].append(shared_in_shape_position[num].pop(0))
+            state[num].append(shared_state[num].value)
+    for num in range(num_shape):
+        pass
+        #print("in_shape_position", in_shape_position[num])
+        #digi_position_l[num].draw_in_shape_position(frame, in_shape_position[num])
     #print("position", datetime.datetime.now() - dt4)
     #重心が枠に貼っているか確認
     num_mode = 0
@@ -206,6 +225,11 @@ while True:
         #print(dt2 - dt1)
         dt=str(dt2-dt1)
         cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
+
+
+    dt=str(datetime.datetime.now())
+    #cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 1)
+    cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 1)
     # 結果表示
     digi_frame.show_frame()
     digi_frame.show_edit_frame(frame)
