@@ -49,7 +49,7 @@ class digimono_camera_mask(object):
     def draw_contours(self, edit_frame, contours, thickness):
         return_edit_frame = edit_frame.copy()
         for num_contours in range(len(contours)):
-            return_edit_frame = cv2.drawContours(edit_frame, self.contours, num_contours, self.draw_color, thickness)
+            return_edit_frame = cv2.drawContours(edit_frame, contours, num_contours, self.draw_color, thickness)
         return return_edit_frame
     
     def draw_point(self, frame, point):

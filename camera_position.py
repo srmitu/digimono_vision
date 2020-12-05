@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from multiprocessing import Process, Value, Array
+import random
 
 class digimono_camera_position(object):
     def __init__(self, draw_color, type_shape, shape):
@@ -14,34 +15,35 @@ class digimono_camera_position(object):
     def __exit__(self):
         pass
 
-    def position_detect(self, position, cal_time,  in_shape_position, task, state, mode, type_shape, shape):
+    def position_detect(self, point, cal_time,  in_shape_position, task, state, mode, type_shape, shape):
         #毎度更新必要:point, cal_time
         #毎度更新される:in_shape_position, state, task
         #値変更なし:mode, type_shape, shape 
         in_shape = 0 #0 = False, 1 = True
         old_in_shape = 0
         task.value = 1
+        num1 = int(random.uniform(10,99))
         while True:
             while task.value == 1:
                 pass
-            task.value = 0
-            if(position != []):
+            in_shape_point = []
+            if point:#中身が入っているとTrue, 入っていないとFalse
                 if(type_shape == 0):#四角
-                    for num in range(len(position)):
-                        rectangle_x = abs(position[num][0]-shape[0][0])
-                        rectangle_y = abs(position[num][1]-shape[0][1])
+                    for num in range(len(point)):
+                        rectangle_x = abs(point[num][0]-shape[0][0])
+                        rectangle_y = abs(point[num][1]-shape[0][1])
                         if(rectangle_x < shape[1][0] and rectangle_y  < shape[1][1]):
                             in_shape = 1
-                            in_shape_position.append(position[num])
+                            in_shape_point.append(point[num])
 
                 elif(type_shape == 1):#楕円
-                    for num in range(len(position)):
-                        ellipse_x = ((position[num][0]-shape[0][0]) / shape[1][0]) ** 2 
-                        ellipse_y = ((position[num][1]-shape[0][1]) / shape[1][1]) ** 2
+                    for num in range(len(point)):
+                        ellipse_x = ((point[num][0]-shape[0][0]) / shape[1][0]) ** 2 
+                        ellipse_y = ((point[num][1]-shape[0][1]) / shape[1][1]) ** 2
                         ellipse = ellipse_x + ellipse_y
                         if(ellipse < 1):
                             in_shape = 1
-                            in_shape_position.append(position[num])
+                            in_shape_point.append(point[num])
 
                 if((old_in_shape == 0 and in_shape == 1) and ((mode <= 1 and cal_time == 0) or mode > 1)):
                     state.value = 10 #rise
@@ -53,6 +55,9 @@ class digimono_camera_position(object):
                     state.value = 0 #out
                 else:
                     state.value = 20 #none
+            for num in range(len(in_shape_point)):
+                in_shape_position.append(in_shape_point.pop(0))
+            print("in_shape_position", in_shape_position)
             task.value = 1
     
     def draw_in_shape_position(self, frame, in_shape_position):
