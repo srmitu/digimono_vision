@@ -57,7 +57,7 @@ class digimono_camera_position(object):
                     state.value = 20 #none
             for num in range(len(in_shape_point)):
                 in_shape_position.append(in_shape_point.pop(0))
-            print("in_shape_position", in_shape_position)
+            #print("in_shape_position", in_shape_position)
             task.value = 1
     
     def draw_in_shape_position(self, frame, in_shape_position):
