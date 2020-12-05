@@ -76,7 +76,7 @@ digi_position_l = []
 for num_list in range(num_color):
     digi_mask_l.append(camera_mask.digimono_camera_mask(draw_color[num_list]))
 for num_list in range(num_shape):
-    digi_position_l.append(camera_position.digimono_camera_position(draw_color[num_list], type_shape[num_list], shape[num_list]))
+    digi_position_l.append(camera_position.digimono_camera_position(draw_color[num_list], type_shape[num_list], shape[num_list], mode[num_list]))
 #初期化
 cal_time = False 
 display_time = False

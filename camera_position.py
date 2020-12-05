@@ -4,11 +4,12 @@ from multiprocessing import Process, Value, Array
 import time
 
 class digimono_camera_position(object):
-    def __init__(self, draw_color, type_shape, shape):
+    def __init__(self, draw_color, type_shape, shape, mode):
         #初期化
         self.draw_color = tuple(draw_color) 
         self.type_shape = type_shape
         self.shape = shape
+        self.mode = mode
 
     def __enter__(self):
         pass
@@ -75,6 +76,15 @@ class digimono_camera_position(object):
             return_frame = cv2.rectangle(frame, left_up, right_down, tuple(self.draw_color), 3)
         elif(self.type_shape == 1):
             return_frame = cv2.ellipse(frame, (tuple(self.shape[0]),tuple(self.shape[1] * 2),0), tuple(self.draw_color), 3)
+        name = "none"
+        if(self.mode == 0):
+            name = "START"
+        elif(self.mode == 1):
+            name = "END"
+        elif(self.mode == 2):
+            name = "ERROR"
+        text_position = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]+15))
+        cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(self.draw_color), 2)
         return return_frame
         
 
