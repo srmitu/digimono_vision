@@ -187,13 +187,14 @@ while True:
                 pass
         len_shared_in_shape_position = len(shared_in_shape_position[num])
         #len_shared_state = len(shared_state[num])
+        in_shape_position[num] = []
         for num_pop in range(len_shared_in_shape_position):
             in_shape_position[num].append(shared_in_shape_position[num].pop(0))
             state[num].append(shared_state[num].value)
     for num in range(num_shape):
         pass
         #print("in_shape_position", in_shape_position[num])
-        #digi_position_l[num].draw_in_shape_position(frame, in_shape_position[num])
+        digi_position_l[num].draw_in_shape_position(frame, in_shape_position[num])
     #print("position", datetime.datetime.now() - dt4)
     #重心が枠に貼っているか確認
     num_mode = 0
