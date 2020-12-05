@@ -15,10 +15,10 @@ class digimono_camera_position(object):
     def __exit__(self):
         pass
 
-    def position_detect(self, point, cal_time,  in_shape_position, task, state, mode, type_shape, shape):
-        #毎度更新必要:point, cal_time
+    def position_detect(self, point,  in_shape_position, task, state, type_shape, shape):
+        #毎度更新必要:point
         #毎度更新される:in_shape_position, state, task
-        #値変更なし:mode, type_shape, shape 
+        #値変更なし:type_shape, shape 
         in_shape = False 
         old_in_shape = False
         task.value = False
@@ -46,9 +46,9 @@ class digimono_camera_position(object):
                             in_shape = True
                             in_shape_point.append(point[num])
 
-                if((old_in_shape == False and in_shape == True) and ((mode <= 1 and cal_time == 0) or mode > 1)):
+                if(old_in_shape == False and in_shape == True):
                     state.value = ord('r')#rise
-                elif((old_in_shape == True and in_shape == False) and ((mode <= 1 and cal_time == 0) or mode > 1)):
+                elif(old_in_shape == True and in_shape == False):
                     state.value = ord('f') #fall
                 elif(in_shape == True):
                     state.value = ord('i') #in
@@ -56,9 +56,9 @@ class digimono_camera_position(object):
                     state.value = ord('o') #out
                 else:
                     state.value = ord('n') #none
+            old_in_shape = in_shape
             for num in range(len(in_shape_point)):
                 in_shape_position.append(in_shape_point.pop(0))
-            #print("in_shape_position", in_shape_position)
             task.value = False
     
     def draw_in_shape_position(self, frame, in_shape_position):
