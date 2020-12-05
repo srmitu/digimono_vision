@@ -66,7 +66,7 @@ in_shape_position = []
 for i in range(num_shape):
     state.append(0)
     in_shape_position.append(0)
-    state[i] = []
+    state[i] = 0 
     in_shape_position[i] = []
 #使用するクラス
 digi_frame = camera_frame.digimono_camera_frame(camera_num)
@@ -108,7 +108,7 @@ for num in range(num_shape):
     shared_position_task[num] = Value('i', 0)
     shared_state[num] = Value('i', 0)
     shared_cal_time[num] = Value('i', 0)
-cal_time_a = shared_cal_time 
+    shared_cal_time[num] = 0
 
 #フレームを取得(初回のみ)
 raw_frame = digi_frame.get_frame()
@@ -141,41 +141,30 @@ for num in range(num_shape):
 while True:
     #frame = raw_frame.copy()
     #maskのサブプロセスが終わるまで待機(初回は無限ループ外で実行されているのを待つ)
-    dt4 = datetime.datetime.now()
     for num in range(num_color):
         contours[num] = []
         point[num] = []
-        dt10 = datetime.datetime.now()
         while shared_mask_task[num].value == 0:
             pass
         len_shared_contours = len(shared_contours[num])
-        len_shared_mask_point = len(shared_mask_point[num])
         len_shared_position_point = len(shared_position_point[num])
-        for num_pop in range(len_shared_contours):
-            contours[num].append(shared_contours[num].pop(0))
-        for num_pop in range(len_shared_mask_point):
-            point[num].append(shared_mask_point[num].pop(0))
         for num_pop in range(len_shared_position_point):
             shared_position_point[num].pop(0)
         for num_pop in range(len_shared_contours):
+            contours[num].append(shared_contours[num].pop(0))
+            point[num].append(shared_mask_point[num].pop(0))
             shared_position_point[num].append(point[num][num_pop])
-        #print("mask_process", datetime.datetime.now() - dt10)
-    #print("mask", datetime.datetime.now() - dt4)
     #フレームを取得
     raw_frame = digi_frame.get_frame()
     shared_hsv.append(cv2.cvtColor(raw_frame, cv2.COLOR_BGR2HSV))
     shared_hsv.pop(0)
     frame = raw_frame.copy()
-    shared_cal_time = cal_time_a
-    #shared_position_point = point
     #positionのプロセスに処理を開始させる
     for num in range(num_shape):
         shared_position_task[num].value = 0
-    dt4 = datetime.datetime.now()
     #maskのプロセスに処理を開始させる
     for num in range(num_color):
         shared_mask_task[num].value = 0
-    dt4 = datetime.datetime.now()
     #見つかった輪郭の重心を描く
     for num in range(num_color):
         digi_mask_l[num].draw_point(frame, point[num])
@@ -186,16 +175,13 @@ while True:
         while shared_position_task[num].value == 0:
                 pass
         len_shared_in_shape_position = len(shared_in_shape_position[num])
-        #len_shared_state = len(shared_state[num])
         in_shape_position[num] = []
+        state[num] = 0
         for num_pop in range(len_shared_in_shape_position):
             in_shape_position[num].append(shared_in_shape_position[num].pop(0))
-            state[num].append(shared_state[num].value)
+            state[num] = shared_state[num].value
     for num in range(num_shape):
-        pass
-        #print("in_shape_position", in_shape_position[num])
         digi_position_l[num].draw_in_shape_position(frame, in_shape_position[num])
-    #print("position", datetime.datetime.now() - dt4)
     #重心が枠に貼っているか確認
     num_mode = 0
     for num_list in digi_position_l:
@@ -203,18 +189,16 @@ while True:
             if(cal_time == 0):
                 cal_time = 1
                 display_time = 1
-                cal_time_a[mode] = 1
                 dt1 = datetime.datetime.now()
 
         elif(mode[num_mode] == 1 and state[num_mode] == 10):#rise
             if(cal_time == 1):
                 cal_time = 0
-                cal_time_a[mode] =1
                 dt2 = datetime.datetime.now()
 
         num_mode += 1
         frame = num_list.draw_shape(frame)
-    #print("jushin", datetime.datetime.now() - dt4)
+    #サイクルタイム計算の処理
     if(cal_time == 0):
         if(cv2.waitKey(5) == 13):
             display_time = 0
@@ -226,14 +210,21 @@ while True:
         #print(dt2 - dt1)
         dt=str(dt2-dt1)
         cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
+    #計算するモードかそうでないか設定する
+    for num in range(len(shared_cal_time)):
+        if(cal_time == 0):
+            if(mode[num] == 0):
+                shared_cal_time[num] = 0
+            elif(mode[num] == 1):
+                shared_cal_time[num] = 1
+        else:
+            if(mode[num] == 0):
+                shared_cal_time[num] = 1
+            elif(mode[num] == 1):
+                shared_cal_time[num] = 0
 
-
-    dt=str(datetime.datetime.now())
-    #cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 1)
-    cv2.putText(frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 1)
     # 結果表示
     digi_frame.show_frame()
     digi_frame.show_edit_frame(frame)
     digi_frame.end_check()
-    #print("jushin", datetime.datetime.now() - dt4)
 
