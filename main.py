@@ -11,6 +11,7 @@ from multiprocessing import Process, Value, Array, Manager
 #実際の環境によって変更する変数
 camera_num = 0
 max_mask_process = 3
+permit_show_video = False
 #設定ファイルを作成するまで必要な変数群
 num_color = 3
 num_shape = 3
@@ -69,7 +70,7 @@ for i in range(num_shape):
     state[i] = 0 
     in_shape_position[i] = []
 #使用するクラス
-digi_frame = camera_frame.digimono_camera_frame(camera_num)
+digi_frame = camera_frame.digimono_camera_frame(camera_num, permit_show_video)
 digi_mask_l = []
 digi_position_l = []
 for num_list in range(num_color):
@@ -138,7 +139,7 @@ for num in range(num_shape):
     shared_position_task[num].value = 0
 
 #無限ループ
-while True:
+while(digi_frame.get_ret() == True):
     #frame = raw_frame.copy()
     #maskのサブプロセスが終わるまで待機(初回は無限ループ外で実行されているのを待つ)
     for num in range(num_color):
@@ -224,7 +225,7 @@ while True:
                 shared_cal_time[num] = 0
 
     # 結果表示
-    digi_frame.show_frame()
     digi_frame.show_edit_frame(frame)
+
     digi_frame.end_check()
 
