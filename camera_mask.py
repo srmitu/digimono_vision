@@ -33,7 +33,7 @@ class digimono_camera_mask(object):
                 mask2 = cv2.inRange(hsv, threshold[3], threshold[2])
                 mask = mask1 + mask2
             if(pattern == 2 or pattern == 4):
-                #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, numpy.ones((5,5), numpy.uint8))
+                mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, numpy.ones((5,5), numpy.uint8))
                 #輪郭の抽出
                 all_contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 #必要な輪郭のみ抽出する
