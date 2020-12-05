@@ -22,7 +22,7 @@ class digimono_camera_mask(object):
         pattern = len(threshold)
         task.value = 1
         while True:
-            while task.value == 1:
+            while(task.value == False):
                 time.sleep(0.02)
                 pass
             hsv = hsv_frame[0]
@@ -46,7 +46,7 @@ class digimono_camera_mask(object):
                         x,y = int(mu["m10"]/mu["m00"]), int(mu["m01"]/mu["m00"])
                         point.append([x, y])
             
-            task.value = 1
+            task.value = False
 
     def draw_contours(self, edit_frame, contours, thickness):
         return_edit_frame = edit_frame.copy()
