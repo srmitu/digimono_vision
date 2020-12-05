@@ -1,57 +1,68 @@
 from threading import Thread
+import multiprocessing 
+from multiprocessing import Manager, Process, Value
 import cv2
 import time
 
 class digimono_camera_frame(object):
-    def __init__(self, camera_num):
-        self.frame = cv2.imread('opencv.jpeg')
-        #ret: True時はカメラの使用許可    
-        self.ret = False
+    def __init__(self, camera_num, permit_show_video):
+        self.frame = Manager().list()
+        #self.frame.append(cv2.imread('opencv.jpeg'))
         #resize_vertical, resize_wide: 初期の画面の大きさを定義する
-        self.resize_vertical = 300
-        self.resize_wide = 400
         self.edit_resize_vertical = 800
         self.edit_resize_wide = 1000
-        
-        self.capture = cv2.VideoCapture(camera_num)
+        self.request = Value('i', 0)
+        self.request.value = 0
+        self.ret = Value('b')
+        self.ret.value = True
+
+        #self.capture = cv2.VideoCapture(camera_num)
         #遅延抑制
-        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        self.thread = Thread(target = self.update, args=())
-        self.thread.daemon = True
-        self.thread.start()
+        #self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        p_frame = Process(target=self.frame_detect, args=(self.frame, camera_num, self.request, self.ret, permit_show_video))
+        p_frame.daemon = True
+        p_frame.start()
         
+    def frame_detect(self, frame, camera_num, request, ret, show_video):
+        capture= cv2.VideoCapture(camera_num)
+        ret.value = True
+        while(ret.value == True):
+            ret.value, video = capture.read()
+            if(request.value == 1):
+                frame.append(video)
+                request.value = 0
+            if(cv2.waitKey(10) == 27):#ESC key
+                capture.release()
+                cv2.destroyAllWindows()
+                break
+            if(show_video == True):
+                cv2.namedWindow("video", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("video", 400, 300)
+                cv2.imshow("video", video)
+        ret.value = False
+        capture.release()
+        cv2.destroyAllWindows()
 
-    def update(self):
-        while self.capture.isOpened():
-            self.ret, self.frame = self.capture.read()
-            time.sleep(.01)
-        exit(1)
-
-    #毎フレーム読み出さなくてはならないメソッド
-    def end_check(self):
-        if cv2.waitKey(1) == 27:#ESC key
-            self.capture.release()
-            cv2.destroyAllWindows()
-            exit(1)
-
-    def show_frame(self):
-        cv2.namedWindow("frame", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("frame", self.resize_wide, self.resize_vertical)
-        cv2.imshow("frame", self.frame)
     def show_edit_frame(self, edit_frame):
         cv2.namedWindow("FrameEdit", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("FrameEdit", self.edit_resize_wide, self.edit_resize_vertical)
         cv2.imshow("FrameEdit",edit_frame)
 
     def get_frame(self):
-        return self.frame
+        if(self.ret.value == False):
+            return -1 
+        self.request.value = 1
+        while(self.request.value == 1):
+            pass
+        return self.frame.pop(0)
 
     def get_ret(self):
-        return self.ret
+        return self.ret.value
 
-    def put_resize(self, vertical, wide):
-        self.resize_wide = wide
-        self.resize_vertical = vertical
     def put_edit_resize(self, vertical, wide):
         self.edit_resize_wide = wide
         self.edit_resize_vertical = vertical
+
+    def end_check(self):
+        if(cv2.waitKey(1) == 27):#ESC key
+            self.ret.value = False
