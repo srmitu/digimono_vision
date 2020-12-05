@@ -2,6 +2,7 @@
 import cv2
 import numpy
 from multiprocessing import Manager, Value, Array, Event
+import time
 class digimono_camera_mask(object):
 
     def __init__(self, draw_color):
@@ -22,6 +23,7 @@ class digimono_camera_mask(object):
         task.value = 1
         while True:
             while task.value == 1:
+                time.sleep(0.02)
                 pass
             hsv = hsv_frame[0]
             #maskの作成(２値化)

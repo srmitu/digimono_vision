@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from multiprocessing import Process, Value, Array
-import random
+import time
 
 class digimono_camera_position(object):
     def __init__(self, draw_color, type_shape, shape):
@@ -22,9 +22,9 @@ class digimono_camera_position(object):
         in_shape = 0 #0 = False, 1 = True
         old_in_shape = 0
         task.value = 1
-        num1 = int(random.uniform(10,99))
         while True:
             while task.value == 1:
+                time.sleep(0.02)
                 pass
             in_shape_point = []
             if point:#中身が入っているとTrue, 入っていないとFalse
