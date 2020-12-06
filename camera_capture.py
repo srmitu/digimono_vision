@@ -29,7 +29,7 @@ class digimono_camera_capture(object):
         while(ret.value == True):
             print('\r' + "recording in " + str(video_name), end="")
             while(task.value == False):
-                time.sleep(0.03)
+                time.sleep(0.1)
             dt_now = datetime.datetime.now()
             dt = dt_now - dt_start
             if(dt.seconds >= 30):
@@ -41,7 +41,8 @@ class digimono_camera_capture(object):
                 if not os.path.isdir(video_path):
                     os.makedirs(video_path)
                 writer = cv2.VideoWriter(video_name, video_format, fps/10, (wide, height))
-            writer.write(frame[0])
+            put_frame = cv2.putText(frame[0], str(datetime.datetime.now()), (0,10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
+            writer.write(put_frame)
             if(ret.value == False):
                 break
             task.value = False
