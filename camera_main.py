@@ -11,7 +11,7 @@ class digimono_camera_main(object):
     def  __init__(self):
         #コンフィグファイルの読みi込み
         self.digi_config = config_read.digimono_config_read()
-        self.camera_num, self.min_area, self.permit_show_video, self.threshold, self.color, self.mode, self.type_shape, self.shape, self.num_color, self.num_shape = self.digi_config.config_detect()
+        self.camera_num, self.min_area, self.permit_show_video, self.permit_record, self.threshold, self.color, self.mode, self.type_shape, self.shape, self.num_color, self.num_shape = self.digi_config.config_detect()
 
     def initialize(self):
         #描画する色(閾値から決定)

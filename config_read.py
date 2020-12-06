@@ -13,6 +13,7 @@ class digimono_config_read(object):
         camera_num = config_data['define']['camera_num']
         min_area = config_data['define']['min_area']
         permit_show_video = config_data['define']['permit_show_video']
+        permit_record = config_data['define']['permit_record']
         print("define data can be read")
 
         #maskプロセス用の設定の読み込み
@@ -23,7 +24,7 @@ class digimono_config_read(object):
                 print('Error: There is no color number(' + str(num) + ') data in the config data', file=sys.stderr)
                 sys.exit(1)
             threshold.append(numpy.array(config_data['color'][num]))
-        print(str(num_color) + 'data about color can be read')
+        print(str(num_color) + ' data about color can be read')
 
         #positionプロセス用の設定の読み込み
         color = []
@@ -39,7 +40,7 @@ class digimono_config_read(object):
             mode.append(config_data['shape'][num]['mode'])
             type_shape.append(config_data['shape'][num]['type_shape'])
             shape.append((config_data['shape'][num]['shape']))
-        print(str(num_color) + 'data about shape can be read')
+        print(str(num_color) + ' data about shape can be read')
 
         print("All data can be read")
-        return camera_num, min_area, permit_show_video, threshold, color, mode, type_shape, shape, num_color, num_shape
+        return camera_num, min_area, permit_show_video, permit_record,  threshold, color, mode, type_shape, shape, num_color, num_shape
