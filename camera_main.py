@@ -30,7 +30,7 @@ class digimono_camera_main(object):
         for num_list in range(self.num_color):
             self.digi_mask_l.append(camera_mask.digimono_camera_mask(self.draw_color[num_list]))
         for num_list in range(self.num_shape):
-            self.digi_position_l.append(camera_position.digimono_camera_position(self.draw_color[num_list], self.type_shape[num_list], self.shape[num_list], self.mode[num_list]))
+            self.digi_position_l.append(camera_position.digimono_camera_position(self.draw_color[self.color[num_list]], self.type_shape[num_list], self.shape[num_list], self.mode[num_list]))
 
         #初期化
         self.cal_time = False 
