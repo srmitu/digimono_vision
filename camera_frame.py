@@ -66,3 +66,6 @@ class digimono_camera_frame(object):
     def end_check(self):
         if(cv2.waitKey(1) == 27):#ESC key
             self.ret.value = False
+        if(self.ret.value == False):
+            cv2.destroyAllWindows()
+            return -1
