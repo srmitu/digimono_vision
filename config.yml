@@ -1,0 +1,26 @@
+color: 
+        0:  [[85, 255, 230], [50, 45, 35]]
+        1:  [[140, 255, 255], [100, 100, 100]]
+        2:  [[15, 255, 255], [0, 100, 100], [180, 255, 255], [160, 100, 100]]
+
+shape:
+        0:
+                num_color:  0
+                mode:  "START"
+                type_shape:  "rectangle"
+                shape:  [[100, 100], [50, 50]]
+        1:
+                num_color:  1
+                mode:  "END"
+                type_shape:  "rectangle"
+                shape:  [[550, 100], [50, 50]]
+        2:
+                num_color:  2
+                mode:  "ERROR"
+                type_shape:  "ellipse"
+                shape:  [[550, 300], [100, 50]]
+
+define:
+        camera_num:  0
+        min_area:  500
+        permit_show_video:  True
