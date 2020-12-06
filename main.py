@@ -1,6 +1,7 @@
 import camera_mask
 import camera_frame
 import camera_position
+import config_read
 import cv2
 import numpy
 import datetime
@@ -8,43 +9,9 @@ import time
 import colorsys
 from multiprocessing import Process, Value, Array, Manager
 
-#実際の環境によって変更する変数
-camera_num = 0
-max_mask_process = 3
-permit_show_video = True
-#設定ファイルを作成するまで必要な変数群
-num_color = 3
-num_shape = 3
-
-#閾値
-threshold = []
-threshold.append(numpy.array([[85, 255, 230],[50, 45,35]]))
-threshold.append(numpy.array([[140, 255, 255],[100, 100, 100]]))
-threshold.append(numpy.array([[15, 255, 255],[0, 100, 100],[180, 255, 255],[160, 100, 100]]))
-#枠の形 0なら四角、1なら楕円
-type_shape = []
-type_shape.append(0)
-type_shape.append(0)
-type_shape.append(1)
-#枠座標
-shape = []
-shape.append(numpy.array([[100,100],[50,50]]))
-shape.append(numpy.array([[550,100],[50,50]]))
-shape.append(numpy.array([[550,300],[100,50]]))
-#モード
-#0:start area
-#1:end area
-mode = []
-mode.append(0)
-mode.append(1)
-mode.append(2)
-#positionのプロセスで判定する色の番号
-color = []
-color.append(0)
-color.append(1)
-color.append(2)
-#判定する最小の面積
-min_area = 500
+#コンフィグファイルの読み込み
+digi_config = config_read.digimono_config_read()
+camera_num, min_area, permit_show_video, threshold, color, mode, type_shape, shape, num_color, num_shape = digi_config.config_detect()
 #描画する色(閾値から決定)
 draw_color = []
 for i in range(num_color):
@@ -184,17 +151,17 @@ while(digi_frame.get_ret() == True):
         digi_position_l[num].draw_in_shape_position(frame, in_shape_position[num])
     #重心が枠に貼っているか確認
     for num in range(num_shape):
-        if(mode[num] == 0 and state[num] == ord('r')):#rise
+        if(mode[num] == "START" and state[num] == ord('r')):#rise
             if(cal_time == False):
                 cal_time = True
                 display_time = True
                 dt1 = datetime.datetime.now()
 
-        elif(mode[num] == 1 and state[num] == ord('r')):#rise
+        elif(mode[num] == "END" and state[num] == ord('r')):#rise
             if(cal_time == True):
                 cal_time = False
                 dt2 = datetime.datetime.now()
-        elif(mode[num] == 2):
+        elif(mode[num] == "ERROR"):
             if(state[num] == ord('i')):
                 error_time = datetime.datetime.now()-error_start_time[num]
                 if(error_time.seconds >= 60):

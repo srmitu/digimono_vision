@@ -30,7 +30,7 @@ class digimono_camera_position(object):
             in_shape_point = []
             in_shape = False
             if point:#中身が入っているとTrue, 入っていないとFalse
-                if(type_shape == 0):#四角
+                if(type_shape == "rectangle"):#四角
                     for num in range(len(point)):
                         rectangle_x = abs(point[num][0]-shape[0][0])
                         rectangle_y = abs(point[num][1]-shape[0][1])
@@ -38,7 +38,7 @@ class digimono_camera_position(object):
                             in_shape = True
                             in_shape_point.append(point[num])
 
-                elif(type_shape == 1):#楕円
+                elif(type_shape == "ellipse"):#楕円
                     for num in range(len(point)):
                         ellipse_x = ((point[num][0]-shape[0][0]) / shape[1][0]) ** 2 
                         ellipse_y = ((point[num][1]-shape[0][1]) / shape[1][1]) ** 2
@@ -70,19 +70,13 @@ class digimono_camera_position(object):
 
     def draw_shape(self, frame):
         return_frame = frame
-        if(self.type_shape == 0):
+        if(self.type_shape == "rectangle"):
             left_up = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]))
             right_down = ((self.shape[0][0]+self.shape[1][0]), (self.shape[0][1]-self.shape[1][1]))
             return_frame = cv2.rectangle(frame, left_up, right_down, tuple(self.draw_color), 3)
-        elif(self.type_shape == 1):
-            return_frame = cv2.ellipse(frame, (tuple(self.shape[0]),tuple(self.shape[1] * 2),0), tuple(self.draw_color), 3)
-        name = "none"
-        if(self.mode == 0):
-            name = "START"
-        elif(self.mode == 1):
-            name = "END"
-        elif(self.mode == 2):
-            name = "ERROR"
+        elif(self.type_shape == "ellipse"):
+            return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), tuple(self.draw_color), 3)
+        name = self.mode
         text_position = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]+15))
         cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(self.draw_color), 2)
         return return_frame
