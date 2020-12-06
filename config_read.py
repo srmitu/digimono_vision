@@ -34,8 +34,23 @@ class digimono_config_read(object):
         num_shape = len(config_data['shape'])
         for num in range(num_shape):
             if((num in config_data['shape']) == False):
-                print('Error: There is no shape number(' + str(num) + ') data in the config data', file=sys.stderr)
+                print('Error: There is no shape number(' + str(num) + ') in the config data', file=sys.stderr)
                 sys.exit(1)
+            #不適切な設定ファイルになっていないかチェック
+            if(config_data['shape'][num]['type_shape'] != "rectangle" and config_data['shape'][num]['type_shape'] != "ellipse"):
+                print('Error: type_shape data of number(' + str(num) + ') in the config data is not correct', file=sys.stderr)
+                sys.exit(1)
+            if(config_data['shape'][num]['mode'] != "START" and config_data['shape'][num]['mode'] != "END" and config_data['shape'][num]['mode'] != "ERROR" and config_data['shape'][num]['mode'] != "RECOGNITION"):
+                print('Error: mode data of number(' + str(num) + ') in the config data is not correct', file=sys.stderr)
+                sys.exit(1)
+            if(len(config_data['shape'][num]['shape']) != 2):
+                print('Error: shape data of number(' + str(num) + ') in the config data is not correct. length is not 2', file=sys.stderr)
+                print(len(config_data['shape'][num]['shape']))
+                sys.exit(1)
+            if(config_data['shape'][num]['num_color'] >= num_color or config_data['shape'][num]['num_color'] < 0):
+                print('Error: num_color data of number(' + str(num) + ') in the config data is not correct', file=sys.stderr)
+                sys.exit(1)
+
             color.append(config_data['shape'][num]['num_color'])
             mode.append(config_data['shape'][num]['mode'])
             type_shape.append(config_data['shape'][num]['type_shape'])
