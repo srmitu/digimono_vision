@@ -23,4 +23,5 @@ shape:
 define:
         camera_num:  0
         min_area:  500
-        permit_show_video:  True
+        permit_show_video:  False
+        permit_record:  True
