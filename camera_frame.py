@@ -7,7 +7,9 @@ import time
 class digimono_camera_frame(object):
     def __init__(self, camera_num, permit_show_video):
         self.frame = Manager().list()
-        #self.frame.append(cv2.imread('opencv.jpeg'))
+        self.frame_height = Value('i', 0)
+        self.frame_width = Value('i', 0)
+        self.frame_fps = Value('i', 0)
         #resize_vertical, resize_wide: 初期の画面の大きさを定義する
         self.edit_resize_vertical = 800
         self.edit_resize_wide = 1000
@@ -16,7 +18,6 @@ class digimono_camera_frame(object):
         self.ret = Value('b')
         self.ret.value = True
 
-        #self.capture = cv2.VideoCapture(camera_num)
         #遅延抑制
         #self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         p_frame = Process(target=self.frame_detect, args=(self.frame, camera_num, self.request, self.ret, permit_show_video))
@@ -25,6 +26,9 @@ class digimono_camera_frame(object):
         
     def frame_detect(self, frame, camera_num, request, ret, show_video):
         capture= cv2.VideoCapture(camera_num)
+        self.frame_height.value = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.frame_width.value = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.frame_fps.value = int(capture.get(cv2.CAP_PROP_FPS))
         ret.value = True
         while(ret.value == True):
             ret.value, video = capture.read()

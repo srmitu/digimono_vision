@@ -1,4 +1,5 @@
 import camera_frame
+import camera_capture
 import camera_main
 
 #camera_mainの定義、コンフィグファイルの読み込み
@@ -11,6 +12,8 @@ digi_main.initialize()
 digi_main.raw_frame = digi_frame.get_frame()
 #カメラ処理をするためのプロセスの生成
 digi_main.make_process()
+#録画するためのcamera_captureの定義、プロセスの生成
+digi_record = camera_capture.digimono_camera_capture(digi_frame.frame_height, digi_frame.frame_width, digi_frame.frame_fps)
 #maskを処理するプロセスを開始する
 digi_main.start_mask_process()
 
@@ -35,5 +38,10 @@ while(digi_frame.get_ret() == True):
     digi_main.calculate_cycle_time()
     #結果表示
     digi_frame.show_edit_frame(digi_main.frame)
+    #録画
+    digi_record.ret.value = digi_frame.get_ret()
+    digi_record.put_frame(digi_main.frame)
+    digi_record.task.value = True
     #終了判定
     digi_frame.end_check()
+digi_record.ret.value = digi_frame.get_ret()
