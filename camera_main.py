@@ -148,16 +148,19 @@ class digimono_camera_main(object):
 
     def check_position_and_shape(self):
         #重心が枠に貼っているか確認
+        multiple_block = False
         for num in range(self.num_shape):
             if(self.mode[num] == "START" and self.state[num] == ord('r')):#rise
-                if(self.cal_time == False):
+                if(self.cal_time == False and multiple_block == False):
                     self.cal_time = True
                     self.display_time = True
+                    multiple_block = True
                     self.dt1 = datetime.datetime.now()
 
             elif(self.mode[num] == "END" and self.state[num] == ord('r')):#rise
-                if(self.cal_time == True):
+                if(self.cal_time == True and multiple_block == False):
                     self.cal_time = False
+                    multiple_block = True
                     self.dt2 = datetime.datetime.now()
             elif(self.mode[num] == "ERROR"):
                 if(self.state[num] == ord('i')):
