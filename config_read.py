@@ -55,7 +55,7 @@ class digimono_config_read(object):
             mode.append(config_data['shape'][num]['mode'])
             type_shape.append(config_data['shape'][num]['type_shape'])
             shape.append((config_data['shape'][num]['shape']))
-        print(str(num_color) + ' data about shape can be read')
+        print(str(num_shape) + ' data about shape can be read')
 
         print("All data can be read")
         return camera_num, min_area, permit_show_video, permit_record,  threshold, color, mode, type_shape, shape, num_color, num_shape
