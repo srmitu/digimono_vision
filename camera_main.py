@@ -163,12 +163,21 @@ class digimono_camera_main(object):
                     multiple_block = True
                     self.dt2 = datetime.datetime.now()
             elif(self.mode[num] == "ERROR"):
+                '''
                 if(self.state[num] == ord('i')):
                     error_time = datetime.datetime.now() - self.error_start_time[num]
-                    if(error_time.seconds >= 60):
+                    if(error_time.seconds >= 10):
                         print(num, "ERROR")
                 else:
                     self.error_start_time[num] = datetime.datetime.now()
+                '''
+                if(self.state[num] == ord('r')):
+                    #エラーの処理を書く
+                    print(num, "ERROR")
+            elif(self.mode[num] == "RECOGNITION"):
+                if(self.state[num] == ord('r')):
+                    #処理の内容をを記入
+                    print(num, "RECOGNITION")
     
             self.frame = self.digi_position_l[num].draw_shape(self.frame)
 
