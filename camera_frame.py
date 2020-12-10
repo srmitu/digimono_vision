@@ -1,4 +1,3 @@
-from threading import Thread
 import multiprocessing 
 from multiprocessing import Manager, Process, Value
 import cv2
@@ -13,8 +12,8 @@ class digimono_camera_frame(object):
         #resize_vertical, resize_wide: 初期の画面の大きさを定義する
         self.edit_resize_vertical = 800
         self.edit_resize_wide = 1000
-        self.request = Value('i', 0)
-        self.request.value = 0
+        self.request = Value('b')
+        self.request.value = False
         self.ret = Value('b')
         self.ret.value = True
 
@@ -32,17 +31,17 @@ class digimono_camera_frame(object):
         ret.value = True
         while(ret.value == True):
             ret.value, video = capture.read()
-            if(request.value == 1):
+            if(request.value == True):
                 frame.append(video)
-                request.value = 0
-            if(cv2.waitKey(10) == 27):#ESC key
-                capture.release()
-                cv2.destroyAllWindows()
-                break
+                request.value = False
             if(show_video == True):
                 cv2.namedWindow("video", cv2.WINDOW_NORMAL)
                 cv2.resizeWindow("video", 400, 300)
                 cv2.imshow("video", video)
+		if(cv2.waitKey(10) == 27):#ESC key
+                    capture.release()
+                    cv2.destroyAllWindows()
+                    break
         ret.value = False
         capture.release()
         cv2.destroyAllWindows()
@@ -55,9 +54,9 @@ class digimono_camera_frame(object):
     def get_frame(self):
         if(self.ret.value == False):
             return -1 
-        self.request.value = 1
-        while(self.request.value == 1):
-            pass
+        self.request.value = True
+        while(self.request.value == True):
+            time.sleep(0.01)
         return self.frame.pop(0)
 
     def get_ret(self):
