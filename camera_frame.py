@@ -38,7 +38,7 @@ class digimono_camera_frame(object):
                 cv2.namedWindow("video", cv2.WINDOW_NORMAL)
                 cv2.resizeWindow("video", 400, 300)
                 cv2.imshow("video", video)
-		if(cv2.waitKey(10) == 27):#ESC key
+                if(cv2.waitKey(10) == 27):#ESC key
                     capture.release()
                     cv2.destroyAllWindows()
                     break
