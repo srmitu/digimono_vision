@@ -15,13 +15,25 @@ shape:
                 type_shape:  "rectangle"
                 shape:  [[550, 100], [50, 50]]
         2:
+                num_color:  0
+                mode:  "RECOGNITION"
+                type_shape:  "ellipse"
+                shape:  [[550, 300], [100, 50]]
+        3:
                 num_color:  2
                 mode:  "ERROR"
                 type_shape:  "ellipse"
-                shape:  [[550, 300], [100, 50]]
+                shape:  [[0, 300], [100, 50]]
 
 define:
         camera_num:  0
         min_area:  500
-        permit_show_video:  False
-        permit_record:  True
+        what_record:  "both"
+
+debug:
+        #permit_show_video:  True
+        permit_show_processed:  True
+        permit_show_contours:  True
+        #coler_detection:
+                                #shape:  [[400,200],[20,20]]
+                                #time:  5
