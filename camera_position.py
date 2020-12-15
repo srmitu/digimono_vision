@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 from multiprocessing import Process, Value, Array
 import time
 
@@ -16,17 +15,16 @@ class digimono_camera_position(object):
     def __exit__(self):
         pass
 
-    def position_detect(self, point,  in_shape_position, task, state, type_shape, shape):
+    def position_detect(self, point,  in_shape_position, task, state, type_shape, shape, end_flag):
         #毎度更新必要:point
         #毎度更新される:in_shape_position, state, task
         #値変更なし:type_shape, shape 
         in_shape = False 
         old_in_shape = False
         task.value = False
-        while True:
-            while task.value == False:
-                time.sleep(0.02)
-                pass
+        while(task.value == False and end_flag.value == False):
+            time.sleep(0.02)
+        while(end_flag.value == False):
             in_shape_point = []
             in_shape = False
             if point:#中身が入っているとTrue, 入っていないとFalse
@@ -61,6 +59,9 @@ class digimono_camera_position(object):
             for num in range(len(in_shape_point)):
                 in_shape_position.append(in_shape_point.pop(0))
             task.value = False
+            while(task.value == False and end_flag.value == False):
+                time.sleep(0.02)
+        print("end_position_process")
     
     def draw_in_shape_position(self, frame, in_shape_position):
         return_frame = frame
