@@ -288,6 +288,9 @@ class digimono_camera_process(object):
 
     def color_detect_end(self):
         self.threshold[0] = self.digi_color.color_detect_end()
+
+    def wait_task(self):
+        return self.digi_color.wait_task()
    
 
     

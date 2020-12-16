@@ -9,7 +9,6 @@ class digimono_get_color(object):
     def __init__(self, left, right, up, down):
         print("start_digimono_get_color")
         self.hsv = Manager().list()
-        self.hsv.append(0)
         self.color_init()
         self.end_flag = Value('b')
         self.end_flag.value = False
@@ -19,12 +18,14 @@ class digimono_get_color(object):
         self.right = right
         self.up = up
         self.down = down
+        self.already = Value('i', 0)
+        self.total = Value('i', 0)
 
-        self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.h_array, self.s_array, self.v_array))
+        self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.h_array, self.s_array, self.v_array, self.already, self.total))
         self.p_color.daemon = True
         self.p_color.start()
 
-    def color_detect_p(self, hsv, task, end_flag, h, s, v):
+    def color_detect_p(self, hsv, task, end_flag, h, s, v, already, total):
         while(task.value == False and end_flag.value == False):
             time.sleep(0.02)
         while(end_flag.value == False):
@@ -34,8 +35,15 @@ class digimono_get_color(object):
                     h[array[wide][vertical][0]] += 1
                     s[array[wide][vertical][1]] += 1
                     v[array[wide][vertical][2]] += 1
-
-            task.value = False
+            already.value += 1
+            print("done " + str(already.value) + "/" + str(total.value), end="\r")
+            hsv.pop(0)
+            if(len(hsv) <= 0):
+                task.value = False
+            elif(already.value == total.value):
+                task.value = False
+            else:
+                task.value = True
             while(task.value == False and end_flag.value == False):
                 time.sleep(0.02)
         print("end_color_detect_process")
@@ -52,12 +60,20 @@ class digimono_get_color(object):
         
     def put_hsv(self, hsv):
         self.hsv.append(hsv)
-        self.hsv.pop(0)
-        while(self.task.value == True):
-            time.sleep(0.02)
-        self.task.value = True
+        self.total.value += 1
+        if(self.task.value == False):
+            self.task.value = True
+
+    def wait_task(self):
+        if(self.task.value == True):
+            return True
+        else:
+            return False
 
     def color_detect_end(self):
+        print("\n")
+        self.total.value = 0
+        self.already.value = 0
         self.draw()
         threshold = self.color_detect()
         return threshold
@@ -102,7 +118,6 @@ class digimono_get_color(object):
             return_num2 = len(array)
         change = False
         area = ave * len(array) * 0.75
-        print("area", area)
         for num in range(ave_num):
             if((len(array) - ave_num) <= 0):
                 break
@@ -136,16 +151,12 @@ class digimono_get_color(object):
         print(h_a)
         print(s_a)
         print(v_a)
-        print("s_a_ave", s_a_ave_num)
-        print("v_a_ave", v_a_ave_num)
         s_a_std_num1, s_a_std_num2 = self.found_std_num(s_a_ave, s_a_ave_num, s_a) 
         v_a_std_num1, v_a_std_num2 = self.found_std_num(v_a_ave, v_a_ave_num, v_a) 
         if(h_a_f2_ave_num == 0):
-            print("h_a_ave", h_a_ave_num)
             h_a_std_num1, h_a_std_num2 = self.found_std_num(h_a_ave, h_a_ave_num, h_a) 
             threshold = [[h_a_std_num2, s_a_std_num2, v_a_std_num2], [h_a_std_num1, s_a_std_num1, v_a_std_num1]]
         else:
-            print("h_a_f1_ave, h_a_f2_ave", h_a_f1_ave_num, h_a_f2_ave_num)
             h_a_f1_std_num1, h_a_f1_std_num2 = self.found_std_num(h_a_f1_ave, h_a_f1_ave_num, h_a_f1) 
             h_a_f2_std_num1, h_a_f2_std_num2 = self.found_std_num(h_a_f2_ave, h_a_f2_ave_num, h_a_f2) 
             threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1]]
