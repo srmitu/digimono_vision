@@ -39,6 +39,16 @@ class digimono_comm(object):
         '''
         return self.reboot
 
+    def color_capture(self, permit_show_processed):
+        return_bool = False
+
+        if(permit_show_processed == True):
+            if(cv2.waitKey(5) == ord('c')):
+                return_bool = True
+                print("color capture")
+
+        return return_bool
+
       
 
 

@@ -72,8 +72,8 @@ class digimono_camera_position(object):
     def draw_shape(self, frame):
         return_frame = frame
         if(self.type_shape == "rectangle"):
-            left_up = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]))
-            right_down = ((self.shape[0][0]+self.shape[1][0]), (self.shape[0][1]-self.shape[1][1]))
+            left_up = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]-self.shape[1][1]))
+            right_down = ((self.shape[0][0]+self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]))
             return_frame = cv2.rectangle(frame, left_up, right_down, tuple(self.draw_color), 3)
         elif(self.type_shape == "ellipse"):
             return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), tuple(self.draw_color), 3)
