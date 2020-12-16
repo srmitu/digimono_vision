@@ -54,8 +54,7 @@ class digimono_camera_main(object):
         self.digi_process.color_detect_start(self.left, self.right, self.up, self.down)
         print("----------------start_calibration---------------------")
         
-
-   def get_frame_normal(self):
+    def get_frame_normal(self):
         #maskを処理するプロセスからの終了処理を受け取り、値を更新する
         self.digi_process.wait_mask_process()
         #フレームを取得
