@@ -44,6 +44,7 @@ class digimono_camera_main(object):
         self.color_capture_already = False
         self.old_color_capture = False
         self.old_color_capture_already = False
+        self.old_state = False
         self.start_color_detect = 0
         self.digi_process.num_color = 1
         self.digi_process.num_shape = 0
@@ -101,16 +102,20 @@ class digimono_camera_main(object):
                 print("----------------calibration---------------------")
                 self.start_color_detect = datetime.now()
                 self.old_color_capture = True
-            self.color_detect()
-            print("yes")
             delta = datetime.now() - self.start_color_detect
-            print(delta)
             if(delta.seconds >= self.digi_process.color_detect_time):
-                self.color_detect_end()
-                print("----------------calibration_end---------------------")
-                self.color_capture = False
-                self.old_color_capture = False
-                self.color_capture_already = True
+                if(self.old_state == False):
+                    self.old_state = True
+                    print("color_record_end")
+                if(self.digi_process.wait_task() == False):
+                    self.color_detect_end()
+                    print("----------------calibration_end---------------------")
+                    self.old_state = False
+                    self.color_capture = False
+                    self.old_color_capture = False
+                    self.color_capture_already = True
+            else:
+                self.color_detect()
         else:
             self.color_capture = self.color_capture_check()
         return_frame = []
