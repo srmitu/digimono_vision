@@ -5,7 +5,6 @@ import get_color
 import config_read
 import logger
 import user_code
-import comm_camera_gui
 import cv2
 import datetime
 import time
@@ -42,7 +41,6 @@ class digimono_camera_process(object):
         #ロガーファイルの作成
         self.log = logger.digimono_logger("cycle")
         self.user = user_code.digimono_user_code()
-        self.digi_comm = comm_camera_gui.digimono_comm()
         
 
     def initialize(self):
@@ -122,6 +120,11 @@ class digimono_camera_process(object):
             self.in_shape_position[num] = []
         #フレームの初期化
         self.raw_frame = 0
+        #GUIと通信用の変数の初期化
+        self.cycle_reset = False
+        self.end_check = False
+        self.reboot_check = False
+        self.color_capture = False
 
     def make_process(self):
         #フレームを取得(初回のみ)
@@ -243,7 +246,7 @@ class digimono_camera_process(object):
         #サイクルタイム計算の処理
         if(self.cal_time == False):
             if(self.permit_show_processed == True):
-                if(self.digi_comm.cycle_reset(self.permit_show_processed) == True):#Enter key
+                if(self.cycle_reset == True):#Enter key
                     self.display_time = False
         if(self.display_time == True):
             if(self.cal_time == True):
@@ -267,22 +270,14 @@ class digimono_camera_process(object):
     def clear_color_process(self):
         self.digi_color.kill()
 
-    def end_check(self):
-        self.digi_comm.end_check()
-
-    def reboot_check(self):
-        return self.digi_comm.reboot_check(self.permit_show_processed)
+    def put_end_check(self, boolean):
+        self.end_check(boolean)
 
     def reboot_finish(self):
         for num in range(self.num_color):
             self.end_flag_mask[num].value = False   
         for num in range(self.num_shape):
             self.end_flag_position[num].value = False   
-
-        self.digi_comm.reboot = False
-
-    def get_task_color_capture(self):
-        return self.digi_comm.color_capture(self.permit_show_processed)
 
     def color_detect_start(self, left, right, up, down):
         self.digi_color = get_color.digimono_get_color(left, right, up, down)
