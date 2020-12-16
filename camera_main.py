@@ -15,6 +15,8 @@ class digimono_camera_main(object):
             self.main_init()
         else:
             self.main_init_color()
+    def __del__(self):
+        self.main_end()
 
     def main_init(self):
         #camera_frameの定義
@@ -165,14 +167,6 @@ class digimono_camera_main(object):
         '''
         self.digi_process.reboot_finish()
 
-
-    def main_end(self):
-        self.digi_frame.end_flag = True
-        if(self.digi_process.permit_record_processed == True):    
-            self.digi_record.ret.value = self.digi_frame.get_ret()
-        self.digi_process.log_end()
-        print("----------------end---------------------")
-
     def get_ret(self):
         return self.digi_frame.get_ret()
 
@@ -273,5 +267,12 @@ class digimono_camera_main(object):
 
     def put_comm_color_capture(self, boolean):
         self.comm_color_capture = boolean
+    
+    def main_end(self):
+        self.digi_frame.end_flag = True
+        if(self.digi_process.permit_record_processed == True):    
+            self.digi_record.ret.value = self.digi_frame.get_ret()
+        self.digi_process.log_end()
+        print("----------------end---------------------")
 
  
