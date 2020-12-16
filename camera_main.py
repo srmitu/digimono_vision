@@ -1,6 +1,8 @@
 import camera_frame
 import camera_capture
 import camera_process
+import cv2
+from datetime import datetime
 import time
 
 class digimono_camera_main(object):
@@ -8,7 +10,10 @@ class digimono_camera_main(object):
         self.digi_process = camera_process.digimono_camera_process()
         self.digi_process.read_config()
         self.digi_process.load_class()
-        self.main_init()
+        if(self.digi_process.permit_color_detect == False):
+            self.main_init()
+        else:
+            self.main_init_color()
 
     def main_init(self):
         #camera_frameの定義
@@ -27,9 +32,38 @@ class digimono_camera_main(object):
         #startしたことを知らせる
         print("----------------start---------------------")
 
+    def main_init_color(self):
+        #camera_frameの定義
+        self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, False)
+        #カメラ処理をするための初期化
+        self.digi_process.initialize()
+        self.color_capture = False
+        self.color_capture_already = False
+        self.old_color_capture = False
+        self.old_color_capture_already = False
+        self.start_color_detect = 0
+        self.digi_process.num_color = 1
+        self.digi_process.num_shape = 0
+        self.threshold = []
+        shape = self.digi_process.color_detect_shape
+        self.left = shape[0][0] - shape[1][0]
+        self.up =shape[0][1] - shape[1][1]
+        self.right = shape[0][0] + shape[1][0]
+        self.down = shape[0][1] + shape[1][1]
+        self.digi_process.color_detect_start(self.left, self.right, self.up, self.down)
+        print("----------------start_calibration---------------------")
+        
+
     #ここからはmain関数にて呼び出されるメソッド
 
     def main_loop(self):
+        if(self.digi_process.permit_color_detect == False):
+            return self.main_loop_normal()
+        else:
+            return self.main_loop_color()
+
+
+    def main_loop_normal(self):
         if(self.digi_process.reboot_check() == True):
             self.reboot()
         #maskを処理するプロセスからの終了処理を受け取り、値を更新する
@@ -55,13 +89,76 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_record_processed == True):
             self.digi_record.ret.value = self.digi_frame.get_ret()
             self.digi_record.put_frame(self.digi_process.frame)
-
         #結果表示・終了判定
         if(self.digi_process.permit_show_processed == True):
             self.digi_frame.show_edit_frame(self.digi_process.frame)
             self.digi_frame.end_check()
-
         return self.digi_process.frame
+
+    def main_loop_color(self):
+        if(self.digi_process.reboot_check() == True):
+            self.reboot()
+        if(self.color_capture == True):
+            #フレームを取得
+            self.digi_process.raw_frame = self.digi_frame.get_frame()
+            if(self.color_capture_already == True):
+                #maskのみリブート
+                self.clear_mask_process()
+                time.sleep(1)
+                self.color_capture_already = False
+                self.old_color_capture_already = False
+            if(self.old_color_capture == False):
+                print("----------------calibration---------------------")
+                self.start_color_detect = datetime.now()
+                self.old_color_capture = True
+            self.color_detect()
+            print("yes")
+            delta = datetime.now() - self.start_color_detect
+            print(delta)
+            if(delta.seconds >= self.digi_process.color_detect_time):
+                self.color_detect_end()
+                print("----------------calibration_end---------------------")
+                self.color_capture = False
+                self.old_color_capture = False
+                self.color_capture_already = True
+        else:
+            self.color_capture = self.digi_process.get_task_color_capture()
+        return_frame = []
+        
+        if(self.color_capture_already == True):
+            if(self.old_color_capture_already == False):
+                self.old_color_capture_already = True
+                self.digi_process.initialize()
+                self.digi_process.raw_frame = self.digi_frame.get_frame()
+                self.digi_process.make_process()
+                self.digi_process.start_mask_process()
+            self.digi_process.wait_mask_process()
+            self.digi_process.start_mask_process()
+            self.digi_process.raw_frame = self.digi_frame.get_frame()
+            self.digi_process.draw_contours_and_point()
+            return_frame = self.digi_process.frame
+        if(return_frame == []):
+            return_frame = self.digi_frame.get_frame()
+        shape = self.digi_process.color_detect_shape
+        return_frame = cv2.rectangle(return_frame, tuple([self.left, self.up]), tuple([self.right, self.down]), (255,255,255), 5)
+        return_frame = cv2.rectangle(return_frame, tuple([self.left, self.up]), tuple([self.right, self.down]), (0,0,0), 3)
+        #結果表示・終了判定
+        if(self.digi_process.permit_show_processed == True):
+            self.digi_frame.show_edit_frame(return_frame)
+            if(self.color_capture == False):
+                self.digi_frame.end_check()
+        
+        return return_frame
+            
+
+
+    def color_detect(self):
+        #生データから情報を得る
+        self.digi_process.color_detect(self.left, self.right, self.up, self.down)
+        
+    def color_detect_end(self):
+        #結果をプロットする
+        self.digi_process.color_detect_end()
 
     def reboot(self):
         print("----------------reboot---------------------")
@@ -71,10 +168,13 @@ class digimono_camera_main(object):
         self.clear_process()
         time.sleep(3)
         #再起動（再定義）する
+        self.__init__()
+        '''
         self.digi_process = camera_process.digimono_camera_process()
         self.digi_process.read_config()
         self.digi_process.load_class()
         self.main_init()
+        '''
         self.digi_process.reboot_finish()
 
 
@@ -93,6 +193,8 @@ class digimono_camera_main(object):
         self.clear_position_process()
         if(self.digi_process.permit_record_processed == True):
             self.clear_record_process()
+        if(self.digi_process.permit_color_detect == True):
+            self.digi_process.clear_color_process()
         self.clear_frame_process()
 
     def clear_mask_process(self):
