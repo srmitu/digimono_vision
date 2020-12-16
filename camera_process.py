@@ -1,6 +1,7 @@
 import camera_mask
 import camera_position
 import camera_capture
+import get_color
 import config_read
 import logger
 import user_code
@@ -263,6 +264,9 @@ class digimono_camera_process(object):
         for num in range(self.num_shape):
             self.end_flag_position[num].value = True
 
+    def clear_color_process(self):
+        self.digi_color.kill()
+
     def end_check(self):
         self.digi_comm.end_check()
 
@@ -277,7 +281,18 @@ class digimono_camera_process(object):
 
         self.digi_comm.reboot = False
 
+    def get_task_color_capture(self):
+        return self.digi_comm.color_capture(self.permit_show_processed)
 
+    def color_detect_start(self, left, right, up, down):
+        self.digi_color = get_color.digimono_get_color(left, right, up, down)
+
+    def color_detect(self, left, right, up, down):
+        frame_Box = self.raw_frame[up: down, left: right]
+        self.digi_color.put_hsv(cv2.cvtColor(frame_Box, cv2.COLOR_BGR2HSV))
+
+    def color_detect_end(self):
+        self.threshold[0] = self.digi_color.color_detect_end()
    
 
     
