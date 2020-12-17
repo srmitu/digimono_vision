@@ -29,24 +29,67 @@ class digimono_get_color(object):
         while(task.value == False and end_flag.value == False):
             time.sleep(0.02)
         while(end_flag.value == False):
-            array = hsv[0]
-            for wide in range(self.right - self.left):
-                for vertical in range(self.down - self.up):
-                    h[array[wide][vertical][0]] += 1
-                    s[array[wide][vertical][1]] += 1
-                    v[array[wide][vertical][2]] += 1
+            array = np.array(hsv[0])
+            frame_h = array[:,:,0].copy()
+            frame_s = array[:,:,1].copy()
+            frame_v = array[:,:,2].copy()
+            #print("hsv",frame_h, frame_s, frame_v)
+  
+            for num in range(256):
+                s[num] += np.count_nonzero(frame_s == num)
+                v[num] += np.count_nonzero(frame_v == num)
+                if(num < 180):
+                    h[num] += np.count_nonzero(frame_h == num)
             already.value += 1
             print("done " + str(already.value) + "/" + str(total.value), end="\r")
             hsv.pop(0)
             if(len(hsv) <= 0):
                 task.value = False
-            elif(already.value == total.value):
-                task.value = False
+            #elif(already.value == total.value):
+                #task.value = False
             else:
                 task.value = True
             while(task.value == False and end_flag.value == False):
                 time.sleep(0.02)
         print("end_color_detect_process")
+    
+    def many_process(self, hsv, task, end_flag, h, s, v, already, total):
+
+        while(task.value == False and end_flag.value == False):
+            time.sleep(0.02)
+        while(end_flag.value == False):
+            for num in range(num_process):
+                hsv_c.append(hsv[0])
+                task_c[num].value = True
+
+            for num in range(num_process):
+                while(task_c[num].value == True):
+                    time.sleep(0.02)
+            hsv.pop(0)
+            if(len(hsv) <= 0):
+                task.value = False
+            else:
+                task.value = True
+            while(task.value == False and end_flag.value == False):
+                time.sleep(0.02)
+        for num in range(num_process):
+            end_flag_c[num].value = True
+
+
+    def color_detect_chird(self, hsv, task, end_flag, h, s, v, left, right, up, down):
+        while(task.value == False and end_flag.value == False):
+            time.sleep(0.02)
+        while(end_flag.value == False):
+            array = hsv[0]
+            for wide in range(right - left):
+                for vertical in range(down - up):
+                    h[array[wide][vertical][0]] += 1
+                    s[array[wide][vertical][1]] += 1
+                    v[array[wide][vertical][2]] += 1
+            hsv.pop(0)
+            task.value = False
+            while(task.value == False and end_flag.value == False):
+                time.sleep(0.02)
 
     def color_init(self):
         self.h_array = Manager().list()
@@ -76,6 +119,11 @@ class digimono_get_color(object):
         self.already.value = 0
         self.draw()
         threshold = self.color_detect()
+        for num in range(256):
+            self.s_array[num] = 0
+            self.v_array[num] = 0
+            if(num < 180):
+                self.h_array[num] = 0
         return threshold
 
 
@@ -133,13 +181,15 @@ class digimono_get_color(object):
         h_a = np.array(self.h_array)
         h_a_f1 = h_a[0:90]
         h_a_f2 = h_a[90:180]
+        print("h_a_f2", h_a_f2)
         s_a = np.array(self.s_array)
         v_a = np.array(self.v_array)
         h_a_f1_ave = h_a_f1.mean()
         h_a_f2_ave = h_a_f2.mean()
         h_a_f1_ave_num = self.found_ave_num(h_a_f1_ave, h_a_f1)
         h_a_f2_ave_num = self.found_ave_num(h_a_f2_ave, h_a_f2) + 90
-        if((h_a_f1_ave_num > 40 and h_a_f2_ave_num < 140) or (np.sum(h_a_f1) * 0.1 > np.sum(h_a_f2)) or (np.sum(h_a_f2) * 0.1 > np.sum(h_a_f1))):
+        print(h_a_f1_ave_num, h_a_f2_ave_num)
+        if((h_a_f1_ave_num > 30 and h_a_f2_ave_num < 150) or (np.sum(h_a_f1) * 0.1 > np.sum(h_a_f2)) or (np.sum(h_a_f2) * 0.1 > np.sum(h_a_f1))):
             h_a_f2_ave_num = 0
             h_a_ave = h_a.mean()
             h_a_ave_num = self.found_ave_num(h_a_ave, h_a)
@@ -148,9 +198,16 @@ class digimono_get_color(object):
         v_a_ave = v_a.mean()
         v_a_ave_num = self.found_ave_num(v_a_ave, v_a)
         threshold = []
-        print(h_a)
-        print(s_a)
-        print(v_a)
+        '''
+        print("h", h_a)
+        print("s", s_a)
+        print("v", v_a)
+        '''
+        for num in range(256):
+            if(num<180):
+                print(num, "v",v_a[num], "s",s_a[num], "h", h_a[num])
+            else:
+                print(num, "v",v_a[num], "s",s_a[num])
         s_a_std_num1, s_a_std_num2 = self.found_std_num(s_a_ave, s_a_ave_num, s_a) 
         v_a_std_num1, v_a_std_num2 = self.found_std_num(v_a_ave, v_a_ave_num, v_a) 
         if(h_a_f2_ave_num == 0):
