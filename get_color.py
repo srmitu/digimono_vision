@@ -53,44 +53,6 @@ class digimono_get_color(object):
                 time.sleep(0.02)
         print("end_color_detect_process")
     
-    def many_process(self, hsv, task, end_flag, h, s, v, already, total):
-
-        while(task.value == False and end_flag.value == False):
-            time.sleep(0.02)
-        while(end_flag.value == False):
-            for num in range(num_process):
-                hsv_c.append(hsv[0])
-                task_c[num].value = True
-
-            for num in range(num_process):
-                while(task_c[num].value == True):
-                    time.sleep(0.02)
-            hsv.pop(0)
-            if(len(hsv) <= 0):
-                task.value = False
-            else:
-                task.value = True
-            while(task.value == False and end_flag.value == False):
-                time.sleep(0.02)
-        for num in range(num_process):
-            end_flag_c[num].value = True
-
-
-    def color_detect_chird(self, hsv, task, end_flag, h, s, v, left, right, up, down):
-        while(task.value == False and end_flag.value == False):
-            time.sleep(0.02)
-        while(end_flag.value == False):
-            array = hsv[0]
-            for wide in range(right - left):
-                for vertical in range(down - up):
-                    h[array[wide][vertical][0]] += 1
-                    s[array[wide][vertical][1]] += 1
-                    v[array[wide][vertical][2]] += 1
-            hsv.pop(0)
-            task.value = False
-            while(task.value == False and end_flag.value == False):
-                time.sleep(0.02)
-
     def color_init(self):
         self.h_array = Manager().list()
         self.s_array = Manager().list()
