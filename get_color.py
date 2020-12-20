@@ -4,6 +4,7 @@ import multiprocessing
 from multiprocessing import Manager, Process, Value
 import matplotlib.pyplot as plt
 import time
+from copy import deepcopy
 
 class digimono_get_color(object):
     def __init__(self, left, right, up, down):
@@ -23,6 +24,19 @@ class digimono_get_color(object):
         self.h_array = [0] * 180
         self.s_array = [0] * 256
         self.v_array = [0] * 256
+        self.old_h_array = [0] * 180
+        self.old_s_array = [0] * 256
+        self.old_v_array = [0] * 256
+        '''
+        self.old_h_array = []
+        for num in range(180):
+            self.old_h_array.append(0)
+        self.old_s_array = []
+        self.old_v_array = []
+        for num in range(180):
+            self.old_s_array.append(0)
+            self.old_v_array.append(0)
+        '''
 
         self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.shared_h_array, self.shared_s_array, self.shared_v_array, self.already, self.total))
         self.p_color.daemon = True
@@ -78,19 +92,37 @@ class digimono_get_color(object):
         else:
             return False
 
-    def color_detect_end(self):
+    def color_detect_end(self, mode):
+        if(mode < -1):
+            mode = -1
+        elif(mode > 1):
+            mode = 1
+        else:
+            mode = int(mode)
         print("\n")
         self.total.value = 0
         self.already.value = 0
-        threshold = self.color_detect()
+        threshold = self.color_detect(mode, True)
         self.draw()
         for num in range(256):
-            self.s_array[num] = 0
-            self.v_array[num] = 0
+            self.shared_s_array[num] = 0
+            self.shared_v_array[num] = 0
             if(num < 180):
-                self.h_array[num] = 0
+                self.shared_h_array[num] = 0
         return threshold
 
+    def color_undo(self):
+        i = 0
+        for num in range(256):
+            if(num < 180):
+                if(self.h_array[num] == 0):
+                    i += 1
+                self.h_array[num] ,self.old_h_array[num] = self.old_h_array[num], self.h_array[num]
+            self.s_array[num] ,self.old_s_array[num] = self.old_s_array[num], self.s_array[num]
+            self.v_array[num] ,self.old_v_array[num] = self.old_v_array[num], self.v_array[num]
+        print("i",i)
+        threshold = self.color_detect(0, False)
+        return threshold
 
     def kill(self):
         self.end_flag.value = True
@@ -122,6 +154,8 @@ class digimono_get_color(object):
         return return_num
 
     def found_std_num(self, ave, ave_num, array):
+        if(np.sum(np.array(array)) == 0):
+            return 0, 0
         return_num1 = int(ave_num - len(array)/2)
         return_num2 = int(ave_num + len(array)/2)
         
@@ -142,14 +176,35 @@ class digimono_get_color(object):
              
         return return_num1, return_num2
 
-    def color_detect(self):
-        self.h_array = self.shared_h_array
-        self.s_array = self.shared_s_array
-        self.v_array = self.shared_v_array
+    def color_detect(self, mode, status):
+        if(status == True):
+            self.old_h_array = deepcopy(self.h_array)
+            self.old_s_array = deepcopy(self.s_array)
+            self.old_v_array = deepcopy(self.v_array)
+            self.h_array = deepcopy(self.shared_h_array)
+            self.s_array = deepcopy(self.shared_s_array)
+            self.v_array = deepcopy(self.shared_v_array)
+        if(mode == 1):
+            for num in range(256):
+                if(num < 180):
+                    self.h_array[num] = self.old_h_array[num] + self.shared_h_array[num]
+                self.s_array[num] = self.old_s_array[num] + self.shared_s_array[num]
+                self.v_array[num] = self.old_v_array[num] + self.shared_v_array[num]
+        if(mode == -1):
+            for num in range(256):
+                if(num < 180):
+                    self.h_array[num] = self.old_h_array[num] - self.shared_h_array[num]
+                    if(self.h_array[num] == 0):
+                        self.h_array[num] = 0
+                self.s_array[num] = self.old_s_array[num] - self.shared_s_array[num]
+                self.v_array[num] = self.old_v_array[num] - self.shared_v_array[num]
+                if(self.s_array[num] == 0):
+                    self.s_array[num] = 0
+                if(self.v_array[num] == 0):
+                    self.v_array[num] = 0
         h_a = np.array(self.h_array)
         h_a_f1 = h_a[0:90]
         h_a_f2 = h_a[90:180]
-        print("h_a_f2", h_a_f2)
         s_a = np.array(self.s_array)
         v_a = np.array(self.v_array)
         h_a_f1_ave = h_a_f1.mean()
@@ -171,11 +226,6 @@ class digimono_get_color(object):
         print("s", s_a)
         print("v", v_a)
         '''
-        for num in range(256):
-            if(num<180):
-                print(num, "v",v_a[num], "s",s_a[num], "h", h_a[num])
-            else:
-                print(num, "v",v_a[num], "s",s_a[num])
         s_a_std_num1, s_a_std_num2 = self.found_std_num(s_a_ave, s_a_ave_num, s_a) 
         v_a_std_num1, v_a_std_num2 = self.found_std_num(v_a_ave, v_a_ave_num, v_a) 
         if(h_a_f2_ave_num == 0):
@@ -187,5 +237,13 @@ class digimono_get_color(object):
             threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1]]
             threshold.append([[h_a_f2_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f2_std_num1, s_a_std_num1, v_a_std_num1]])
         
+        for num in range(256):
+            if(num<180):
+                #print(num, "v",v_a[num], "s",s_a[num], "h", h_a[num])
+                print(num, "v",self.v_array[num], "s",self.s_array[num], "h", self.h_array[num], self.old_v_array[num], self.old_s_array[num], self.h_array[num])
+            else:
+                #print(num, "v",v_a[num], "s",s_a[num])
+                print(num, "v",self.v_array[num], "s",self.s_array[num], self.old_v_array[num], self.old_s_array[num])
+
         print("threshold", threshold)
         return threshold
