@@ -115,12 +115,9 @@ class digimono_get_color(object):
         i = 0
         for num in range(256):
             if(num < 180):
-                if(self.h_array[num] == 0):
-                    i += 1
                 self.h_array[num] ,self.old_h_array[num] = self.old_h_array[num], self.h_array[num]
             self.s_array[num] ,self.old_s_array[num] = self.old_s_array[num], self.s_array[num]
             self.v_array[num] ,self.old_v_array[num] = self.old_v_array[num], self.v_array[num]
-        print("i",i)
         threshold = self.color_detect(0, False)
         return threshold
 
@@ -177,31 +174,48 @@ class digimono_get_color(object):
         return return_num1, return_num2
 
     def color_detect(self, mode, status):
+        old_h_array = [0] * 180
+        old_s_array = [0] * 256
+        old_v_array = [0] * 256
+        shared_h_array = [0] * 180
+        shared_s_array = [0] * 256
+        shared_v_array = [0] * 256
         if(status == True):
             self.old_h_array = deepcopy(self.h_array)
             self.old_s_array = deepcopy(self.s_array)
             self.old_v_array = deepcopy(self.v_array)
-            self.h_array = deepcopy(self.shared_h_array)
-            self.s_array = deepcopy(self.shared_s_array)
-            self.v_array = deepcopy(self.shared_v_array)
+            old_h_array = deepcopy(self.old_h_array)
+            old_s_array = deepcopy(self.old_s_array)
+            old_v_array = deepcopy(self.old_v_array)
+            shared_h_array = deepcopy(self.shared_h_array)
+            shared_s_array = deepcopy(self.shared_s_array)
+            shared_v_array = deepcopy(self.shared_v_array)
         if(mode == 1):
+            print("+")
             for num in range(256):
                 if(num < 180):
-                    self.h_array[num] = self.old_h_array[num] + self.shared_h_array[num]
-                self.s_array[num] = self.old_s_array[num] + self.shared_s_array[num]
-                self.v_array[num] = self.old_v_array[num] + self.shared_v_array[num]
-        if(mode == -1):
+                    print(old_h_array[num], shared_h_array[num])
+                    self.h_array[num] = old_h_array[num] + shared_h_array[num]
+                self.s_array[num] = old_s_array[num] + shared_s_array[num]
+                self.v_array[num] = old_v_array[num] + shared_v_array[num]
+        elif(mode == -1):
+            print("-")
             for num in range(256):
                 if(num < 180):
-                    self.h_array[num] = self.old_h_array[num] - self.shared_h_array[num]
-                    if(self.h_array[num] == 0):
+                    self.h_array[num] = old_h_array[num] - shared_h_array[num]
+                    if(self.h_array[num] <= 0):
                         self.h_array[num] = 0
-                self.s_array[num] = self.old_s_array[num] - self.shared_s_array[num]
-                self.v_array[num] = self.old_v_array[num] - self.shared_v_array[num]
-                if(self.s_array[num] == 0):
+                self.s_array[num] = old_s_array[num] - shared_s_array[num]
+                self.v_array[num] = old_v_array[num] - shared_v_array[num]
+                if(self.s_array[num] <= 0):
                     self.s_array[num] = 0
-                if(self.v_array[num] == 0):
+                if(self.v_array[num] <= 0):
                     self.v_array[num] = 0
+        elif(mode == 0):
+            if(status == True):
+                self.h_array = deepcopy(self.shared_h_array)
+                self.s_array = deepcopy(self.shared_s_array)
+                self.v_array = deepcopy(self.shared_v_array)
         h_a = np.array(self.h_array)
         h_a_f1 = h_a[0:90]
         h_a_f2 = h_a[90:180]
@@ -239,11 +253,9 @@ class digimono_get_color(object):
         
         for num in range(256):
             if(num<180):
-                #print(num, "v",v_a[num], "s",s_a[num], "h", h_a[num])
-                print(num, "v",self.v_array[num], "s",self.s_array[num], "h", self.h_array[num], self.old_v_array[num], self.old_s_array[num], self.h_array[num])
+                print(num, "v",v_a[num], "s",s_a[num], "h", h_a[num])
             else:
-                #print(num, "v",v_a[num], "s",s_a[num])
-                print(num, "v",self.v_array[num], "s",self.s_array[num], self.old_v_array[num], self.old_s_array[num])
+                print(num, "v",v_a[num], "s",s_a[num])
 
         print("threshold", threshold)
         return threshold

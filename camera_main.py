@@ -120,6 +120,8 @@ class digimono_camera_main(object):
                     self.color_capture = False
                     self.old_color_capture = False
                     self.color_capture_already = True
+                    self.color_mode = 0
+                    self.comm_color_mode = 0
             else:
                 self.color_detect()
         elif(self.color_undo == True):
@@ -279,11 +281,10 @@ class digimono_camera_main(object):
         return return_bool
 
     def color_mode_check(self):
-        return_mode = 0
+        return_mode = self.color_mode
         if(self.digi_process.permit_show_processed == True):
             key = cv2.waitKey(5)
             if(key == ord('p') and self.old_key != ord('p')):
-
                 if(self.color_mode == 1):
                     return_mode = 0
                     print("mode is none")
