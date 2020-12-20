@@ -286,8 +286,11 @@ class digimono_camera_process(object):
         frame_Box = self.raw_frame[up: down, left: right]
         self.digi_color.put_hsv(cv2.cvtColor(frame_Box, cv2.COLOR_BGR2HSV))
 
-    def color_detect_end(self):
-        self.threshold[0] = self.digi_color.color_detect_end()
+    def color_detect_end(self, mode):
+        self.threshold[0] = self.digi_color.color_detect_end(mode)
+
+    def color_undo(self):
+        self.threshold[0] = self.digi_color.color_undo()
 
     def wait_task(self):
         return self.digi_color.wait_task()

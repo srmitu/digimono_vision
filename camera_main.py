@@ -49,6 +49,11 @@ class digimono_camera_main(object):
         self.digi_process.num_color = 1
         self.digi_process.num_shape = 0
         self.threshold = []
+        self.color_undo = False
+        self.comm_color_undo = False
+        self.color_mode = 0
+        self.old_key = 0
+        self.comm_color_mode = 0
         shape = self.digi_process.color_detect_shape
         self.left = shape[0][0] - shape[1][0]
         self.up =shape[0][1] - shape[1][1]
@@ -108,7 +113,8 @@ class digimono_camera_main(object):
                     self.old_state = True
                     print("color_record_end")
                 if(self.digi_process.wait_task() == False):
-                    self.color_detect_end()
+                    mode = 0
+                    self.color_detect_end(self.color_mode)
                     print("----------------calibration_end---------------------")
                     self.old_state = False
                     self.color_capture = False
@@ -116,8 +122,20 @@ class digimono_camera_main(object):
                     self.color_capture_already = True
             else:
                 self.color_detect()
+        elif(self.color_undo == True):
+            print("----------------undo or redo---------------------")
+            if(self.color_capture_already == True):
+                #maskのみリブート
+                self.clear_mask_process()
+                time.sleep(1)
+                self.old_color_capture_already = False
+            self.digi_process.color_undo()
+            self.color_undo = False
+            
         else:
             self.color_capture = self.color_capture_check()
+            self.color_undo = self.color_undo_check()
+            self.color_mode = self.color_mode_check()
         return_frame = []
         
         if(self.color_capture_already == True):
@@ -151,9 +169,9 @@ class digimono_camera_main(object):
         #生データから情報を得る
         self.digi_process.color_detect(self.left, self.right, self.up, self.down)
         
-    def color_detect_end(self):
+    def color_detect_end(self, mode):
         #結果をプロットする
-        self.digi_process.color_detect_end()
+        self.digi_process.color_detect_end(mode)
 
     def reboot(self):
         print("----------------reboot---------------------")
@@ -246,8 +264,47 @@ class digimono_camera_main(object):
             return_bool = True
             print("color capture")
 
-
         return return_bool
+
+    def color_undo_check(self):
+        return_bool = False
+        if(self.digi_process.permit_show_processed == True):
+            if(cv2.waitKey(5) == ord('u')):
+                return_bool = True
+                print("undo or redo")
+        if(self.comm_color_undo == True):
+            self.comm_color_undo = False
+            return_bool = True
+            print("undo or redo")
+        return return_bool
+
+    def color_mode_check(self):
+        return_mode = 0
+        if(self.digi_process.permit_show_processed == True):
+            key = cv2.waitKey(5)
+            if(key == ord('p') and self.old_key != ord('p')):
+
+                if(self.color_mode == 1):
+                    return_mode = 0
+                    print("mode is none")
+                else:
+                    return_mode = 1
+                    print("mode is +")
+            elif(key == ord('m') and self.old_key != ord('m')):
+                if(self.color_mode == -1):
+                    return_mode = 0
+                    print("mode is none")
+                else:
+                    return_mode = -1
+                    print("mode is -")
+            self.old_key = key
+        elif(self.comm_color_mode != self.color_mode):
+            return_mode = self.comm_color_mode
+
+        return return_mode
+        
+
+
 
     #ここからはmain関数にて呼び出されるメソッド
 
@@ -272,6 +329,31 @@ class digimono_camera_main(object):
 
     def put_comm_color_capture(self, boolean):
         self.comm_color_capture = boolean
+
+    def put_color_undo(self):
+        self.comm_color_undo = True
+
+    def put_color_redo(self):
+        self.put_color_undo()
+
+    def put_color_mode(self, number):
+        if(number > 1):
+            color_mode = 1
+        elif(number < -1):
+            color_mode = -1
+        else:
+            color_mode = int(number)
+        if(color_mode == 1):
+            if(self.color_mode == 1):
+                self.comm_color_mode = 0
+            else:
+                self.comm_color_mode = 1
+        elif(color_mode == -1):
+            if(self.color_mode == -1):
+                self.comm_color_mode = 0
+            else:
+                self.comm_color_mode = -1
+        self.comm_color_mode_bool = True
     
     def main_end(self):
         self.digi_frame.end_flag = True
