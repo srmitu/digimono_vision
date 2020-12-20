@@ -20,8 +20,11 @@ class digimono_get_color(object):
         self.down = down
         self.already = Value('i', 0)
         self.total = Value('i', 0)
+        self.h_array = [0] * 180
+        self.s_array = [0] * 256
+        self.v_array = [0] * 256
 
-        self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.h_array, self.s_array, self.v_array, self.already, self.total))
+        self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.shared_h_array, self.shared_s_array, self.shared_v_array, self.already, self.total))
         self.p_color.daemon = True
         self.p_color.start()
 
@@ -54,14 +57,14 @@ class digimono_get_color(object):
         print("end_color_detect_process")
     
     def color_init(self):
-        self.h_array = Manager().list()
-        self.s_array = Manager().list()
-        self.v_array = Manager().list()
+        self.shared_h_array = Manager().list()
+        self.shared_s_array = Manager().list()
+        self.shared_v_array = Manager().list()
         for i in range(180):
-            self.h_array.append(0)
+            self.shared_h_array.append(0)
         for i in range(256):
-            self.s_array.append(0)
-            self.v_array.append(0)
+            self.shared_s_array.append(0)
+            self.shared_v_array.append(0)
         
     def put_hsv(self, hsv):
         self.hsv.append(hsv)
@@ -79,8 +82,8 @@ class digimono_get_color(object):
         print("\n")
         self.total.value = 0
         self.already.value = 0
-        self.draw()
         threshold = self.color_detect()
+        self.draw()
         for num in range(256):
             self.s_array[num] = 0
             self.v_array[num] = 0
@@ -140,6 +143,9 @@ class digimono_get_color(object):
         return return_num1, return_num2
 
     def color_detect(self):
+        self.h_array = self.shared_h_array
+        self.s_array = self.shared_s_array
+        self.v_array = self.shared_v_array
         h_a = np.array(self.h_array)
         h_a_f1 = h_a[0:90]
         h_a_f2 = h_a[90:180]
