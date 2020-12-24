@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 import multiprocessing
 from multiprocessing import Manager, Process, Value
+import matplotlib as mpl
+mpl.use('TkAgg')
+mpl.rc('font', family='Noto Sans CJK JP')
 import matplotlib.pyplot as plt
 import time
 from copy import deepcopy
@@ -27,17 +30,6 @@ class digimono_get_color(object):
         self.old_h_array = [0] * 180
         self.old_s_array = [0] * 256
         self.old_v_array = [0] * 256
-        '''
-        self.old_h_array = []
-        for num in range(180):
-            self.old_h_array.append(0)
-        self.old_s_array = []
-        self.old_v_array = []
-        for num in range(180):
-            self.old_s_array.append(0)
-            self.old_v_array.append(0)
-        '''
-
         self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.shared_h_array, self.shared_s_array, self.shared_v_array, self.already, self.total))
         self.p_color.daemon = True
         self.p_color.start()
@@ -50,7 +42,6 @@ class digimono_get_color(object):
             frame_h = array[:,:,0].copy()
             frame_s = array[:,:,1].copy()
             frame_v = array[:,:,2].copy()
-            #print("hsv",frame_h, frame_s, frame_v)
   
             for num in range(256):
                 s[num] += np.count_nonzero(frame_s == num)
@@ -99,16 +90,23 @@ class digimono_get_color(object):
             mode = 1
         else:
             mode = int(mode)
-        print("\n")
         self.total.value = 0
         self.already.value = 0
         threshold = self.color_detect(mode, True)
-        self.draw()
+        shared_h_array = deepcopy(self.shared_h_array)
+        shared_s_array = deepcopy(self.shared_s_array)
+        shared_v_array = deepcopy(self.shared_v_array)
+
+        self.p_draw = Process(target=self.draw, args=(self.h_array, self.s_array, self.v_array, shared_h_array, shared_s_array, shared_v_array))
+        self.p_draw.daemon = True
+        self.p_draw.start()
+
         for num in range(256):
             self.shared_s_array[num] = 0
             self.shared_v_array[num] = 0
             if(num < 180):
                 self.shared_h_array[num] = 0
+
         return threshold
 
     def color_undo(self):
@@ -124,23 +122,33 @@ class digimono_get_color(object):
     def kill(self):
         self.end_flag.value = True
 
-    def draw(self):
+    def draw(self, now_h, now_s, now_v, d_h, d_s, d_v):
         line_h = np.array(range(180))
         line_s_v = np.array(range(256))
+        #fig = plt.figure(figsize=(5,6))
         fig = plt.figure()
+        fig.subplots_adjust(hspace=0.5)
         axH = fig.add_subplot(3,1,1)
-        axH.bar(line_h, self.h_array, width=1.0, color='#FF0000', align="center")
-        #axH.title("H")
+        axH.bar(line_h, now_h, width=1.0, color='#FF0000', align="center", zorder=1)
+        axH.scatter(line_h, d_h, s=8, zorder=3)
+        axH.set_xlabel("H")
+        axH.set_ylabel("取得回数")
+        axH.grid(True)
         axS = fig.add_subplot(3,1,2)
-        axS.bar(line_s_v, self.s_array, width=1.0, color='#FF0000', align="center")
-        #axS.title("S")
+        axS.bar(line_s_v, now_s, width=1.0, color='#FF0000', align="center", zorder=1)
+        axS.scatter(line_s_v, d_s, s=8, zorder=3)
+        axS.set_xlabel("S")
+        axS.set_ylabel("取得回数")
+        axS.grid(True)
         axV = fig.add_subplot(3,1,3)
-        axV.bar(line_s_v, self.v_array, width=1.0, color='#FF0000', align="center")
-        #axV.title("V")
+        axV.bar(line_s_v, now_v, width=1.0, color='#FF0000', align="center", zorder=1)
+        axV.scatter(line_s_v, d_v, s=8, zorder=3)
+        axV.set_xlabel("V")
+        axV.set_ylabel("取得回数")
+        axV.grid(True)
         print("show")
         
-        #fig.tight_layout()
-        fig.show()
+        plt.show(block=True)
 
     def found_ave_num(self, ave, array):
         return_num = 0
@@ -170,7 +178,11 @@ class digimono_get_color(object):
                 return_num1 = ave_num - num
                 return_num2 = ave_num + num
                 break
-             
+
+        if(return_num1 < 0):
+            return_num1 = 0
+        if(return_num2 > len(array)):
+            return_num2 = len(array)
         return return_num1, return_num2
 
     def color_detect(self, mode, status):
@@ -194,7 +206,6 @@ class digimono_get_color(object):
             print("+")
             for num in range(256):
                 if(num < 180):
-                    print(old_h_array[num], shared_h_array[num])
                     self.h_array[num] = old_h_array[num] + shared_h_array[num]
                 self.s_array[num] = old_s_array[num] + shared_s_array[num]
                 self.v_array[num] = old_v_array[num] + shared_v_array[num]
@@ -225,7 +236,6 @@ class digimono_get_color(object):
         h_a_f2_ave = h_a_f2.mean()
         h_a_f1_ave_num = self.found_ave_num(h_a_f1_ave, h_a_f1)
         h_a_f2_ave_num = self.found_ave_num(h_a_f2_ave, h_a_f2) + 90
-        print(h_a_f1_ave_num, h_a_f2_ave_num)
         if((h_a_f1_ave_num > 30 and h_a_f2_ave_num < 150) or (np.sum(h_a_f1) * 0.1 > np.sum(h_a_f2)) or (np.sum(h_a_f2) * 0.1 > np.sum(h_a_f1))):
             h_a_f2_ave_num = 0
             h_a_ave = h_a.mean()
@@ -235,11 +245,6 @@ class digimono_get_color(object):
         v_a_ave = v_a.mean()
         v_a_ave_num = self.found_ave_num(v_a_ave, v_a)
         threshold = []
-        '''
-        print("h", h_a)
-        print("s", s_a)
-        print("v", v_a)
-        '''
         s_a_std_num1, s_a_std_num2 = self.found_std_num(s_a_ave, s_a_ave_num, s_a) 
         v_a_std_num1, v_a_std_num2 = self.found_std_num(v_a_ave, v_a_ave_num, v_a) 
         if(h_a_f2_ave_num == 0):
@@ -250,12 +255,6 @@ class digimono_get_color(object):
             h_a_f2_std_num1, h_a_f2_std_num2 = self.found_std_num(h_a_f2_ave, h_a_f2_ave_num, h_a_f2) 
             threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1]]
             threshold.append([[h_a_f2_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f2_std_num1, s_a_std_num1, v_a_std_num1]])
-        
-        for num in range(256):
-            if(num<180):
-                print(num, "v",v_a[num], "s",s_a[num], "h", h_a[num])
-            else:
-                print(num, "v",v_a[num], "s",s_a[num])
 
         print("threshold", threshold)
         return threshold

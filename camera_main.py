@@ -52,7 +52,9 @@ class digimono_camera_main(object):
         self.color_undo = False
         self.comm_color_undo = False
         self.color_mode = 0
-        self.old_key = 0
+        self.old_key = -1
+        self.old_old_key = -1
+        self.key = -1
         self.comm_color_mode = 0
         shape = self.digi_process.color_detect_shape
         self.left = shape[0][0] - shape[1][0]
@@ -95,6 +97,7 @@ class digimono_camera_main(object):
 
     def get_frame_color(self):
         if(self.color_capture == True):
+            self.key = 0
             #フレームを取得
             self.digi_process.raw_frame = self.digi_frame.get_frame()
             if(self.color_capture_already == True):
@@ -108,7 +111,7 @@ class digimono_camera_main(object):
                 self.start_color_detect = datetime.now()
                 self.old_color_capture = True
             delta = datetime.now() - self.start_color_detect
-            if(delta.seconds >= self.digi_process.color_detect_time):
+            if(delta.seconds >= (self.digi_process.color_detect_time / (abs(self.color_mode)+1))):
                 if(self.old_state == False):
                     self.old_state = True
                     print("color_record_end")
@@ -125,6 +128,7 @@ class digimono_camera_main(object):
             else:
                 self.color_detect()
         elif(self.color_undo == True):
+            self.key = 0
             print("----------------undo or redo---------------------")
             if(self.color_capture_already == True):
                 #maskのみリブート
@@ -135,6 +139,10 @@ class digimono_camera_main(object):
             self.color_undo = False
             
         else:
+            if(self.digi_process.permit_show_processed == True):
+                self.key = cv2.waitKey(30)
+            else:
+                self.key = -1
             self.color_capture = self.color_capture_check()
             self.color_undo = self.color_undo_check()
             self.color_mode = self.color_mode_check()
@@ -157,6 +165,12 @@ class digimono_camera_main(object):
         shape = self.digi_process.color_detect_shape
         return_frame = cv2.rectangle(return_frame, tuple([self.left, self.up]), tuple([self.right, self.down]), (255,255,255), 5)
         return_frame = cv2.rectangle(return_frame, tuple([self.left, self.up]), tuple([self.right, self.down]), (0,0,0), 3)
+        if(self.color_mode == 1):
+            return_frame = cv2.putText(return_frame, "+", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
+            return_frame = cv2.putText(return_frame, "+", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
+        elif(self.color_mode == -1):
+            return_frame = cv2.putText(return_frame, "-", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
+            return_frame = cv2.putText(return_frame, "-", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
         #結果表示・終了判定
         if(self.digi_process.permit_show_processed == True):
             self.digi_frame.show_edit_frame(return_frame)
@@ -258,7 +272,7 @@ class digimono_camera_main(object):
         return_bool = False
 
         if(self.digi_process.permit_show_processed == True):
-            if(cv2.waitKey(5) == ord('c')):
+            if(self.key == ord('c')):
                 return_bool = True
                 print("color capture")
         if(self.comm_color_capture == True):
@@ -271,7 +285,7 @@ class digimono_camera_main(object):
     def color_undo_check(self):
         return_bool = False
         if(self.digi_process.permit_show_processed == True):
-            if(cv2.waitKey(5) == ord('u')):
+            if(self.key == ord('u')):
                 return_bool = True
                 print("undo or redo")
         if(self.comm_color_undo == True):
@@ -283,22 +297,17 @@ class digimono_camera_main(object):
     def color_mode_check(self):
         return_mode = self.color_mode
         if(self.digi_process.permit_show_processed == True):
-            key = cv2.waitKey(5)
-            if(key == ord('p') and self.old_key != ord('p')):
-                if(self.color_mode == 1):
-                    return_mode = 0
-                    print("mode is none")
-                else:
-                    return_mode = 1
-                    print("mode is +")
-            elif(key == ord('m') and self.old_key != ord('m')):
-                if(self.color_mode == -1):
-                    return_mode = 0
-                    print("mode is none")
-                else:
-                    return_mode = -1
-                    print("mode is -")
-            self.old_key = key
+            if(self.key == ord('p')):
+                return_mode = 1
+                print("mode is +")
+            elif(self.key == ord('n')):
+                return_mode = 0
+                print("mode is none")
+            elif(self.key == ord('m')):
+                return_mode = -1
+                print("mode is -")
+            self.old_old_key = self.old_key 
+            self.old_key = self.key
         elif(self.comm_color_mode != self.color_mode):
             return_mode = self.comm_color_mode
 
