@@ -129,28 +129,32 @@ class digimono_get_color(object):
         line_h = np.array(range(180))
         line_s_v = np.array(range(256))
         if(len(threshold) == 2):
-            h_ave = (threshold[0][0] - threshold[1][0])/2 + threshold[1][0]
-            s_ave = (threshold[0][1] - threshold[1][1])/2 + threshold[1][1]
-            v_ave = (threshold[0][2] - threshold[1][2])/2 + threshold[1][2]
-            h_std = (h_ave - threshold[1][0])/1.14 #標準席分布表より算出
-            s_std = (s_ave - threshold[1][1])/1.14 #標準席分布表より算出
-            v_std = (v_ave - threshold[1][2])/1.14 #標準席分布表より算出
+            h_ave = ((threshold[0][0]-1) - threshold[1][0])/2 + threshold[1][0]
+            s_ave = ((threshold[0][1]-1) - threshold[1][1])/2 + threshold[1][1]
+            v_ave = ((threshold[0][2]-1) - threshold[1][2])/2 + threshold[1][2]
+            h_std = (h_ave - threshold[1][0])/3
+            s_std = (s_ave - threshold[1][1])/3
+            v_std = (v_ave - threshold[1][2])/3
             print(h_ave, h_std)
             print(s_ave, s_std)
             print(v_ave, v_std)
-            self.h_array = self.area * norm.pdf(line_h, int(h_ave), int(h_std))
-            self.s_array = self.area * norm.pdf(line_s_v, int(s_ave), int(s_std))
-            self.v_array = self.area * norm.pdf(line_s_v, int(v_ave), int(v_std))
-            for num in range(256):
-                if(num<180):
-                    self.h_array[num] = int(self.h_array[num])
-                self.s_array[num] = int(self.s_array[num])
-                self.v_array[num] = int(self.v_array[num])
+            h_array = norm.pdf(line_h, h_ave, h_std)
+            s_array = norm.pdf(line_s_v, s_ave, s_std)
+            v_array = norm.pdf(line_s_v, v_ave, v_std)
+            self.h_array = self.area * h_array * 0.75
+            self.s_array = self.area * s_array * 0.75
+            self.v_array = self.area * v_array * 0.75
+            h_non_num = np.count_nonzero(h_array < 0.001)
+            s_non_num = np.count_nonzero(s_array < 0.001)
+            v_non_num = np.count_nonzero(v_array < 0.001)
+            self.h_array = np.where(h_array < 0.001, self.area * 0.25 / h_non_num, self.h_array)
+            self.s_array = np.where(s_array < 0.001, self.area * 0.25 / s_non_num, self.s_array)
+            self.v_array = np.where(v_array < 0.001, self.area * 0.25 / v_non_num, self.v_array)
         if(len(threshold) == 4):
-            h1_ave = (threshold[0][0] - threshold[1][0])/2 + threshold[1][0]
-            h2_ave = (threshold[2][0] - threshold[3][0])/2 + threshold[3][0]
-            s_ave = (threshold[0][1] - threshold[1][1])/2 + threshold[1][1]
-            v_ave = (threshold[0][2] - threshold[1][2])/2 + threshold[1][2]
+            h1_ave = ((threshold[0][0]-1) - threshold[1][0])/2 + threshold[1][0]
+            h2_ave = ((threshold[2][0]-1) - threshold[3][0])/2 + threshold[3][0]
+            s_ave = ((threshold[0][1]-1) - threshold[1][1])/2 + threshold[1][1]
+            v_ave = ((threshold[0][2]-1) - threshold[1][2])/2 + threshold[1][2]
             h1_std = (h1_ave - threshold[1][0])/1.14 #標準席分布表より算出
             h2_std = (h2_ave - threshold[3][0])/1.14 #標準席分布表より算出
             s_std = (s_ave - threshold[1][1])/1.14 #標準席分布表より算出
@@ -159,7 +163,6 @@ class digimono_get_color(object):
             self.h_array += int(self.area/2) * norm.pdf(line_h, int(h2_ave), int(h2_std))
             self.s_array = self.area * norm.pdf(line_s_v, int(s_ave), int(s_std))
             self.v_array = self.area * norm.pdf(line_s_v, int(v_ave), int(v_std))
-        print(self.h_array)
         shared_h_array = deepcopy(self.shared_h_array)
         shared_s_array = deepcopy(self.shared_s_array)
         shared_v_array = deepcopy(self.shared_v_array)
@@ -214,16 +217,21 @@ class digimono_get_color(object):
         return_num1 = 0
         return_num2 = len(array)
         area = ave * len(array) * 0.75
-        num = 0
-        for num in range(ave_num + 1):
-            if((ave_num - num) < 0 or (ave_num + num) > len(array)):
+        l = 0
+        r = 0
+        for num in range(ave_num * 2):
+            if(num % 2 == 0):
+                l += 1
+            else:
+                r += 1
+            if((ave_num - l) < 0 or (ave_num + r) > len(array)):
                 break
-            area_det = np.sum(array[(ave_num - num):(ave_num + num + 1)])
+            area_det = np.sum(array[(ave_num - l):(ave_num + r + 1)])
             if(area_det > area):
                 if not(num ==0):
                     break
-        return_num1 = ave_num - num
-        return_num2 = ave_num + num
+        return_num1 = ave_num - l
+        return_num2 = ave_num + r + 1
         if(return_num1 < 0):
             return_num1 = 0
         if(return_num2 > len(array)):
