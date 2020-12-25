@@ -6,11 +6,12 @@ import matplotlib as mpl
 mpl.use('TkAgg')
 mpl.rc('font', family='Noto Sans CJK JP')
 import matplotlib.pyplot as plt
+from scipy.stats import norm
 import time
 from copy import deepcopy
 
 class digimono_get_color(object):
-    def __init__(self, left, right, up, down):
+    def __init__(self, left, right, up, down, time):
         print("start_digimono_get_color")
         self.hsv = Manager().list()
         self.color_init()
@@ -22,6 +23,7 @@ class digimono_get_color(object):
         self.right = right
         self.up = up
         self.down = down
+        self.area = int((right - left) * (down - up) * (time * 4))
         self.already = Value('i', 0)
         self.total = Value('i', 0)
         self.h_array = [0] * 180
@@ -119,13 +121,61 @@ class digimono_get_color(object):
         threshold = self.color_detect(0, False)
         return threshold
 
+    def color_change(self, threshold):
+        print(threshold)
+        self.old_h_array = deepcopy(self.h_array)
+        self.old_s_array = deepcopy(self.s_array)
+        self.old_v_array = deepcopy(self.v_array)
+        line_h = np.array(range(180))
+        line_s_v = np.array(range(256))
+        if(len(threshold) == 2):
+            h_ave = (threshold[0][0] - threshold[1][0])/2 + threshold[1][0]
+            s_ave = (threshold[0][1] - threshold[1][1])/2 + threshold[1][1]
+            v_ave = (threshold[0][2] - threshold[1][2])/2 + threshold[1][2]
+            h_std = (h_ave - threshold[1][0])/1.14 #標準席分布表より算出
+            s_std = (s_ave - threshold[1][1])/1.14 #標準席分布表より算出
+            v_std = (v_ave - threshold[1][2])/1.14 #標準席分布表より算出
+            print(h_ave, h_std)
+            print(s_ave, s_std)
+            print(v_ave, v_std)
+            self.h_array = self.area * norm.pdf(line_h, int(h_ave), int(h_std))
+            self.s_array = self.area * norm.pdf(line_s_v, int(s_ave), int(s_std))
+            self.v_array = self.area * norm.pdf(line_s_v, int(v_ave), int(v_std))
+            for num in range(256):
+                if(num<180):
+                    self.h_array[num] = int(self.h_array[num])
+                self.s_array[num] = int(self.s_array[num])
+                self.v_array[num] = int(self.v_array[num])
+        if(len(threshold) == 4):
+            h1_ave = (threshold[0][0] - threshold[1][0])/2 + threshold[1][0]
+            h2_ave = (threshold[2][0] - threshold[3][0])/2 + threshold[3][0]
+            s_ave = (threshold[0][1] - threshold[1][1])/2 + threshold[1][1]
+            v_ave = (threshold[0][2] - threshold[1][2])/2 + threshold[1][2]
+            h1_std = (h1_ave - threshold[1][0])/1.14 #標準席分布表より算出
+            h2_std = (h2_ave - threshold[3][0])/1.14 #標準席分布表より算出
+            s_std = (s_ave - threshold[1][1])/1.14 #標準席分布表より算出
+            v_std = (v_ave - threshold[1][2])/1.14 #標準席分布表より算出
+            self.h_array = int(self.area/2) * norm.pdf(line_h, int(h1_ave), int(h1_std))
+            self.h_array += int(self.area/2) * norm.pdf(line_h, int(h2_ave), int(h2_std))
+            self.s_array = self.area * norm.pdf(line_s_v, int(s_ave), int(s_std))
+            self.v_array = self.area * norm.pdf(line_s_v, int(v_ave), int(v_std))
+        print(self.h_array)
+        shared_h_array = deepcopy(self.shared_h_array)
+        shared_s_array = deepcopy(self.shared_s_array)
+        shared_v_array = deepcopy(self.shared_v_array)
+
+        self.p_draw = Process(target=self.draw, args=(self.h_array, self.s_array, self.v_array, shared_h_array, shared_s_array, shared_v_array))
+        self.p_draw.daemon = True
+        self.p_draw.start()
+
+
+
     def kill(self):
         self.end_flag.value = True
 
     def draw(self, now_h, now_s, now_v, d_h, d_s, d_v):
         line_h = np.array(range(180))
         line_s_v = np.array(range(256))
-        #fig = plt.figure(figsize=(5,6))
         fig = plt.figure()
         fig.subplots_adjust(hspace=0.5)
         axH = fig.add_subplot(3,1,1)
@@ -153,7 +203,7 @@ class digimono_get_color(object):
     def found_ave_num(self, ave, array):
         return_num = 0
         for num in range(len(array)):
-            if((ave * (len(array) / 2)) < np.sum(array[0:num])):
+            if((ave * (len(array) / 2)) < np.sum(array[0:(num+1)])):
                 return_num = num
                 break
         return return_num
@@ -161,24 +211,19 @@ class digimono_get_color(object):
     def found_std_num(self, ave, ave_num, array):
         if(np.sum(np.array(array)) == 0):
             return 0, 0
-        return_num1 = int(ave_num - len(array)/2)
-        return_num2 = int(ave_num + len(array)/2)
-        
-        if(return_num1 < 0):
-            return_num1 = 0
-        if(return_num2 > len(array)):
-            return_num2 = len(array)
-        change = False
+        return_num1 = 0
+        return_num2 = len(array)
         area = ave * len(array) * 0.75
-        for num in range(ave_num):
-            if((len(array) - ave_num) <= 0):
+        num = 0
+        for num in range(ave_num + 1):
+            if((ave_num - num) < 0 or (ave_num + num) > len(array)):
                 break
-            area_det = np.sum(array[(ave_num - num):(ave_num + num)])
+            area_det = np.sum(array[(ave_num - num):(ave_num + num + 1)])
             if(area_det > area):
-                return_num1 = ave_num - num
-                return_num2 = ave_num + num
-                break
-
+                if not(num ==0):
+                    break
+        return_num1 = ave_num - num
+        return_num2 = ave_num + num
         if(return_num1 < 0):
             return_num1 = 0
         if(return_num2 > len(array)):
@@ -252,7 +297,7 @@ class digimono_get_color(object):
             threshold = [[h_a_std_num2, s_a_std_num2, v_a_std_num2], [h_a_std_num1, s_a_std_num1, v_a_std_num1]]
         else:
             h_a_f1_std_num1, h_a_f1_std_num2 = self.found_std_num(h_a_f1_ave, h_a_f1_ave_num, h_a_f1) 
-            h_a_f2_std_num1, h_a_f2_std_num2 = self.found_std_num(h_a_f2_ave, h_a_f2_ave_num, h_a_f2) 
+            h_a_f2_std_num1, h_a_f2_std_num2 = self.found_std_num(h_a_f2_ave, h_a_f2_ave_num, h_a)
             threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1]]
             threshold.append([[h_a_f2_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f2_std_num1, s_a_std_num1, v_a_std_num1]])
 
