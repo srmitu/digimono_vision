@@ -280,7 +280,7 @@ class digimono_camera_process(object):
             self.end_flag_position[num].value = False   
 
     def color_detect_start(self, left, right, up, down):
-        self.digi_color = get_color.digimono_get_color(left, right, up, down)
+        self.digi_color = get_color.digimono_get_color(left, right, up, down, self.color_detect_time)
 
     def color_detect(self, left, right, up, down):
         frame_Box = self.raw_frame[up: down, left: right]
@@ -291,6 +291,10 @@ class digimono_camera_process(object):
 
     def color_undo(self):
         self.threshold[0] = self.digi_color.color_undo()
+
+    def color_change(self, threshold):
+        self.threshold[0] = threshold
+        self.digi_color.color_change(threshold)
 
     def wait_task(self):
         return self.digi_color.wait_task()

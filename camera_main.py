@@ -4,6 +4,7 @@ import camera_process
 import cv2
 from datetime import datetime
 import time
+import colorsys
 
 class digimono_camera_main(object):
     def  __init__(self):
@@ -19,6 +20,7 @@ class digimono_camera_main(object):
         self.main_end()
 
     def main_init(self):
+        self.key = -1
         #camera_frameの定義
         self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, self.digi_process.permit_record_raw)
         #カメラ処理をするための初期化
@@ -36,6 +38,7 @@ class digimono_camera_main(object):
         print("----------------start---------------------")
 
     def main_init_color(self):
+        self.key = -1
         #camera_frameの定義
         self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, False)
         #カメラ処理をするための初期化
@@ -52,10 +55,10 @@ class digimono_camera_main(object):
         self.color_undo = False
         self.comm_color_undo = False
         self.color_mode = 0
-        self.old_key = -1
-        self.old_old_key = -1
-        self.key = -1
         self.comm_color_mode = 0
+        self.color_threshold = []
+        self.comm_color_threshold = []
+        self.color_change = False
         shape = self.digi_process.color_detect_shape
         self.left = shape[0][0] - shape[1][0]
         self.up =shape[0][1] - shape[1][1]
@@ -97,7 +100,6 @@ class digimono_camera_main(object):
 
     def get_frame_color(self):
         if(self.color_capture == True):
-            self.key = 0
             #フレームを取得
             self.digi_process.raw_frame = self.digi_frame.get_frame()
             if(self.color_capture_already == True):
@@ -128,7 +130,6 @@ class digimono_camera_main(object):
             else:
                 self.color_detect()
         elif(self.color_undo == True):
-            self.key = 0
             print("----------------undo or redo---------------------")
             if(self.color_capture_already == True):
                 #maskのみリブート
@@ -137,15 +138,21 @@ class digimono_camera_main(object):
                 self.old_color_capture_already = False
             self.digi_process.color_undo()
             self.color_undo = False
+        elif(self.color_change == True):
+            print("----------------color_change---------------------")
+            if(self.color_capture_already == True):
+                #maskのみリブート
+                self.clear_mask_process()
+                time.sleep(1)
+                self.old_color_capture_already = False
+            self.digi_process.color_change(self.color_threshold)
+            self.color_change = False
             
         else:
-            if(self.digi_process.permit_show_processed == True):
-                self.key = cv2.waitKey(30)
-            else:
-                self.key = -1
             self.color_capture = self.color_capture_check()
             self.color_undo = self.color_undo_check()
             self.color_mode = self.color_mode_check()
+            self.color_change, self.color_threshold = self.color_threshold_check()
         return_frame = []
         
         if(self.color_capture_already == True):
@@ -160,6 +167,8 @@ class digimono_camera_main(object):
             self.digi_process.raw_frame = self.digi_frame.get_frame()
             self.digi_process.draw_contours_and_point()
             return_frame = self.digi_process.frame
+            return_frame = cv2.putText(return_frame, str(len(self.digi_process.point[0])), (500,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
+            return_frame = cv2.putText(return_frame, str(len(self.digi_process.point[0])), (500,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
         if(return_frame == []):
             return_frame = self.digi_frame.get_frame()
         shape = self.digi_process.color_detect_shape
@@ -171,6 +180,17 @@ class digimono_camera_main(object):
         elif(self.color_mode == -1):
             return_frame = cv2.putText(return_frame, "-", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
             return_frame = cv2.putText(return_frame, "-", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
+        #枠の中心のHSV値を表示する(目安)
+        point_x = int((self.right - self.left)/2 + self.left)
+        point_y = int((self.down - self.up)/2 + self.up)
+        h,s,v = colorsys.rgb_to_hsv(return_frame[point_y][point_x][2]/255, return_frame[point_y][point_x][1]/255, return_frame[point_y][point_x][0]/255)
+        return_frame = cv2.putText(return_frame, str(tuple([int(h*180), int(s*255), int(v*255)])), (400,70), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,0), 2)
+        return_frame = cv2.putText(return_frame, str(tuple([int(h*180), int(s*255), int(v*255)])), (400,70), cv2.FONT_HERSHEY_PLAIN, 2, (255,2555,255), 1)
+        #色取得中か表示
+        if(self.color_capture == True and self.old_state ==False):
+            return_frame = cv2.putText(return_frame, "*CAPTURE", (0,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,0), 3)
+            return_frame = cv2.putText(return_frame, "*CAPTURE", (0,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,255), 2)
+
         #結果表示・終了判定
         if(self.digi_process.permit_show_processed == True):
             self.digi_frame.show_edit_frame(return_frame)
@@ -239,7 +259,7 @@ class digimono_camera_main(object):
     def cycle_reset(self):
         return_bool = False
         if(self.digi_process.permit_show_processed == True):
-            if(cv2.waitKey(5) == 13): #Enter key
+            if(self.key == 13): #Enter key
                 return_bool = True
         if(self.comm_cycle_reset == True):
             self.comm_cycle_reset = False
@@ -257,9 +277,10 @@ class digimono_camera_main(object):
     def reboot_check(self):
         return_bool = False
         if(self.digi_process.permit_show_processed == True):
-            if(cv2.waitKey(5) == ord('r')):
+            if(self.key == ord('r')):
+                self.key = -1
                 return_bool= True
-                print("reboot request")
+                print("reboot request from key")
         
         if(self.comm_reboot_check == True):
             self.comm_reboot_check = False
@@ -274,7 +295,7 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('c')):
                 return_bool = True
-                print("color capture")
+                print("color capture from key")
         if(self.comm_color_capture == True):
             self.comm_color_capture = False
             return_bool = True
@@ -287,7 +308,7 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('u')):
                 return_bool = True
-                print("undo or redo")
+                print("undo or redo from key")
         if(self.comm_color_undo == True):
             self.comm_color_undo = False
             return_bool = True
@@ -299,26 +320,52 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('p')):
                 return_mode = 1
-                print("mode is +")
+                print("mode is + from key")
             elif(self.key == ord('n')):
                 return_mode = 0
-                print("mode is none")
+                print("mode is none from key")
             elif(self.key == ord('m')):
                 return_mode = -1
-                print("mode is -")
-            self.old_old_key = self.old_key 
-            self.old_key = self.key
+                print("mode is - from key")
         elif(self.comm_color_mode != self.color_mode):
             return_mode = self.comm_color_mode
 
         return return_mode
         
+    def color_threshold_check(self):
+        return_threshold = self.color_threshold
+        bool_chage = False
+        if(self.digi_process.permit_show_processed == True):
+            if(self.key == ord('i')):
+                print()
+                y_or_n_one_threshold = input("しきい値のH(色相)は1種類だけですか?[y/n]: ")
+                if(y_or_n_one_threshold == 'y'):
+                    h_max, h_min = (int(x) for x in input("しきい値のH(色相)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    return_threshold = [[h_max, s_max, v_max], [h_min, s_min, v_min]]
+                    bool_chage = True
+                else:
+                    h1_max, h1_min = (int(x) for x in input("しきい値のH(色相)の1つめの最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    h2_max, h2_min = (int(x) for x in input("しきい値のH(色相)の2つ目の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                    return_threshold = [[h1_max, s_max, v_max], [h1_min, s_min, v_min], [h2_max, s_max, v_max], [h2_min, s_min, v_min]]
+                    bool_chage = True
+        elif(self.comm_color_threshold != self.color_threshold):
+            return_threshold = self.comm_color_threshold
+            bool_chage = True
 
-
+        return bool_chage, return_threshold
 
     #ここからはmain関数にて呼び出されるメソッド
 
     def get_frame(self):
+        #キー入力やGUIからの情報を更新する
+        if(self.digi_process.permit_show_processed == True):
+            self.key = cv2.waitKey(20)
+        else:
+            self.key = -1
         if(self.reboot_check() == True):
             self.reboot()
         if(self.digi_process.permit_color_detect == False):
@@ -364,6 +411,10 @@ class digimono_camera_main(object):
             else:
                 self.comm_color_mode = -1
         self.comm_color_mode_bool = True
+
+    def put_color_throeshold(self, threshold):
+        if(len(threshold) == 2 or len(threshold) == 4):
+            self.comm_threshold = threshold
     
     def main_end(self):
         self.digi_frame.end_flag = True
