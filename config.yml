@@ -34,6 +34,7 @@ debug:
         #permit_show_video:  True
         permit_show_processed:  True
         permit_show_contours:  True
-        #coler_detection:
-                                #shape:  [[400,200],[20,20]]
-                                #time:  5
+        none:
+        #color_detection:
+                shape:  [[400,200],[40,40]]
+                num_attempt: 10
