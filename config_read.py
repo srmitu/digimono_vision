@@ -87,7 +87,7 @@ class digimono_config_read(object):
         permit_show_contours = False
         permit_color_detect = False
         color_detect_shape = 0
-        color_detect_time = 0
+        color_detect_num_attempt = 0
         if(('debug' in config_data) == True and config_data['debug'] != None):
             print("found debug data", end="\r")
             if(('permit_show_video' in config_data['debug']) == True):
@@ -97,20 +97,20 @@ class digimono_config_read(object):
             if(('permit_show_contours' in config_data['debug']) == True):
                 permit_show_contours = config_data['debug']['permit_show_contours']
             if(('color_detection' in config_data['debug']) == True):
-                if((('shape' in config_data['debug']['color_detection']) == True) and (('time' in config_data['debug']['color_detection']) == True)):
+                if((('shape' in config_data['debug']['color_detection']) == True) and (('num_attempt' in config_data['debug']['color_detection']) == True)):
                         print('color_detect')
                         permit_color_detect = True
                         color_detect_shape = config_data['debug']['color_detection']['shape']
-                        color_detect_time = config_data['debug']['color_detection']['time']
+                        color_detect_num_attempt = config_data['debug']['color_detection']['num_attempt']
             print('All data about debug can be read')
         return_config.append(permit_show_video)
         return_config.append(permit_show_processed)
         return_config.append(permit_show_contours)
         return_config.append(permit_color_detect)
         return_config.append(color_detect_shape)
-        return_config.append(color_detect_time)
+        return_config.append(color_detect_num_attempt)
             
 
         print("All data can be read")
         return return_config
-        #順にcamera_num, min_area, permit_record_raw, permit_record_processed, threshold, color, mode, type_shape, shape, num_color, num_shape, permit_show_video, permit_show_processed, permit_show_contours, permit_color_detect, color_detect_shape, color_detect_time
+        #順にcamera_num, min_area, permit_record_raw, permit_record_processed, threshold, color, mode, type_shape, shape, num_color, num_shape, permit_show_video, permit_show_processed, permit_show_contours, permit_color_detect, color_detect_shape, color_detect_num_attempt
