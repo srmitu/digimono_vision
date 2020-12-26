@@ -48,7 +48,7 @@ class digimono_camera_main(object):
         self.old_color_capture = False
         self.old_color_capture_already = False
         self.old_state = False
-        self.start_color_detect = 0
+        self.num_color_detect = 0
         self.digi_process.num_color = 1
         self.digi_process.num_shape = 0
         self.threshold = []
@@ -110,10 +110,9 @@ class digimono_camera_main(object):
                 self.old_color_capture_already = False
             if(self.old_color_capture == False):
                 print("----------------calibration---------------------")
-                self.start_color_detect = datetime.now()
+                self.num_color_detect = 0
                 self.old_color_capture = True
-            delta = datetime.now() - self.start_color_detect
-            if(delta.seconds >= (self.digi_process.color_detect_time / (abs(self.color_mode)+1))):
+            if(self.num_color_detect >= (self.digi_process.color_detect_num_attempt / (abs(self.color_mode)+1))):
                 if(self.old_state == False):
                     self.old_state = True
                     print("color_record_end")
@@ -129,6 +128,7 @@ class digimono_camera_main(object):
                     self.comm_color_mode = 0
             else:
                 self.color_detect()
+                self.num_color_detect += 1
         elif(self.color_undo == True):
             print("----------------undo or redo---------------------")
             if(self.color_capture_already == True):
@@ -138,6 +138,7 @@ class digimono_camera_main(object):
                 self.old_color_capture_already = False
             self.digi_process.color_undo()
             self.color_undo = False
+            self.color_capture_already = True
         elif(self.color_change == True):
             print("----------------color_change---------------------")
             if(self.color_capture_already == True):
@@ -147,6 +148,7 @@ class digimono_camera_main(object):
                 self.old_color_capture_already = False
             self.digi_process.color_change(self.color_threshold)
             self.color_change = False
+            self.color_capture_already = True
             
         else:
             self.color_capture = self.color_capture_check()
@@ -218,12 +220,6 @@ class digimono_camera_main(object):
         time.sleep(3)
         #再起動（再定義）する
         self.__init__()
-        '''
-        self.digi_process = camera_process.digimono_camera_process()
-        self.digi_process.read_config()
-        self.digi_process.load_class()
-        self.main_init()
-        '''
         self.digi_process.reboot_finish()
 
     def get_ret(self):
@@ -340,18 +336,92 @@ class digimono_camera_main(object):
                 print()
                 y_or_n_one_threshold = input("しきい値のH(色相)は1種類だけですか?[y/n]: ")
                 if(y_or_n_one_threshold == 'y'):
-                    h_max, h_min = (int(x) for x in input("しきい値のH(色相)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    return_threshold = [[h_max, s_max, v_max], [h_min, s_min, v_min]]
-                    bool_chage = True
+                    error_time = 0
+                    try:
+                        h_max, h_min = (int(x) for x in input("しきい値のH(色相)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                        if not ((h_max <= 180 and h_max >= 0) and (h_min <= 180 and h_min >= 0)):
+                            print("数字は0〜180の間である必要があります。操作はキャンセルされます。")
+                            error_time = 1
+                        if(h_max < h_min and error_time == 0):
+                            h_max, h_min = h_min, h_max
+                    except ValueError:
+                        error_time = 1
+                        print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        try:
+                            s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                            if not ((s_max <= 256 and s_max >= 0) and (s_min <= 256 and s_min >= 0)):
+                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                error_time = 1
+                            if(s_max < s_min and error_time == 0):
+                                s_max, s_min = s_min, s_max
+                        except ValueError:
+                            error_time = 1
+                            print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        try:
+                            v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                            if not ((v_max <= 256 and v_max >= 0) and (v_min <= 256 and v_min >= 0)):
+                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                error_time = 1
+                            if(v_max < v_min and error_time == 0):
+                                v_max, v_min = v_min, v_max
+                        except ValueError:
+                            error_time = 1
+                            print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        return_threshold = [[h_max, s_max, v_max], [h_min, s_min, v_min]]
+                        bool_chage = True
+                elif(y_or_n_one_threshold == 'n'):
+                    error_time = 0
+                    try:
+                        h1_max, h1_min = (int(x) for x in input("しきい値のH(色相)の1つめの最大、最小を順に入力してください(スペースで区切ってください、90未満の数字にしてください): ").split())
+                        if not ((h1_max <= 90 and h1_max >= 0) and (h1_min <= 90 and h1_min >= 0)):
+                            print("数字は0〜90の間である必要があります。操作はキャンセルされます。")
+                            error_time = 1
+                        if(h1_max < h1_min and error_time == 0):
+                            h1_max, h1_min = h1_min, h1_max
+                    except ValueError:
+                        error_time = 1
+                        print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        try:
+                            h2_max, h2_min = (int(x) for x in input("しきい値のH(色相)の2つ目の最大、最小を順に入力してください(スペースで区切ってください、90以上の数字にしてください): ").split())
+                            if not ((h2_max <= 180 and h2_max >= 90) and (h2_min <= 180 and h2_min >= 90)):
+                                print("数字は90~180の間である必要があります。操作はキャンセルされます。")
+                                error_time = 1
+                            if(h2_max < h2_min and error_time == 0):
+                                h2_max, h2_min = h2_min, h2_max
+                        except ValueError:
+                            error_time = 1
+                            print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        try:
+                            s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                            if not ((s_max <= 256 and s_max >= 0) and (s_min <= 256 and s_min >= 0)):
+                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                error_time = 1
+                            if(s_max < s_min and error_time == 0):
+                                s_max, s_min = s_min, s_max
+                        except ValueError:
+                            error_time = 1
+                            print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        try:
+                            v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
+                            if not ((v_max <= 256 and v_max >= 0) and (v_min <= 256 and v_min >= 0)):
+                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                error_time = 1
+                            if(v_max < v_min and error_time == 0):
+                                v_max, v_min = v_min, v_max
+                        except ValueError:
+                            error_time = 1
+                            print("無効な数字です。操作はキャンセルされます。")
+                    if(error_time == 0):
+                        return_threshold = [[h1_max, s_max, v_max], [h1_min, s_min, v_min], [h2_max, s_max, v_max], [h2_min, s_min, v_min]]
+                        bool_chage = True
                 else:
-                    h1_max, h1_min = (int(x) for x in input("しきい値のH(色相)の1つめの最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    h2_max, h2_min = (int(x) for x in input("しきい値のH(色相)の2つ目の最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
-                    return_threshold = [[h1_max, s_max, v_max], [h1_min, s_min, v_min], [h2_max, s_max, v_max], [h2_min, s_min, v_min]]
-                    bool_chage = True
+                    print("操作がキャンセルされました。")
         elif(self.comm_color_threshold != self.color_threshold):
             return_threshold = self.comm_color_threshold
             bool_chage = True

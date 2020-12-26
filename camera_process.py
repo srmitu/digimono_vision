@@ -35,7 +35,7 @@ class digimono_camera_process(object):
         self.permit_show_contours = config_list.pop(0)
         self.permit_color_detect = config_list.pop(0)
         self.color_detect_shape = config_list.pop(0)
-        self.color_detect_time = config_list.pop(0)
+        self.color_detect_num_attempt = config_list.pop(0)
 
     def load_class(self):
         #ロガーファイルの作成
@@ -280,7 +280,7 @@ class digimono_camera_process(object):
             self.end_flag_position[num].value = False   
 
     def color_detect_start(self, left, right, up, down):
-        self.digi_color = get_color.digimono_get_color(left, right, up, down, self.color_detect_time)
+        self.digi_color = get_color.digimono_get_color(left, right, up, down, self.color_detect_num_attempt)
 
     def color_detect(self, left, right, up, down):
         frame_Box = self.raw_frame[up: down, left: right]
