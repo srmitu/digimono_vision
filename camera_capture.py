@@ -45,7 +45,7 @@ class digimono_camera_capture(object):
                 break
             dt_now = datetime.datetime.now()
             dt = dt_now - dt_start
-            if(dt.seconds >= 30):
+            if(dt.seconds >= 60*60):
                 print(str(video_name) + "...finish")
                 writer.release()
                 dt_start = dt_now
