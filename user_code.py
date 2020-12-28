@@ -6,6 +6,14 @@ class digimono_user_code(object):
         self.log = logger.digimono_logger("add") #ロガーファイルを作成するクラスをインスタンス化
         #ここから下がユーザーコードになります
     
+    #START枠にriseしたときのメソッド
+    def start_rise(self, num):
+        pass
+
+    #END枠にriseしたときのメソッド
+    def end_rise(self, num, cycle_time):
+        pass
+
     #ERROR枠にriseしたときのメソッド
     def error_rise(self, num):
         #例です
@@ -43,3 +51,15 @@ class digimono_user_code(object):
     #camera_mainにて毎ループ呼び出すようになっています。
     def log_write(self):
         self.log.write_add()
+
+    #映像を加工できるメソッド
+    def edit_frame(self, frame):
+        edit_frame = frame
+        #ここから
+
+        #ここまで
+        return edit_frame
+    
+    #すべての処理が終了した際に行うものを集めたメソッド
+    def finish_process(self):
+        pass
