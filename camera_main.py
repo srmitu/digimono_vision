@@ -5,6 +5,7 @@ import cv2
 from datetime import datetime
 import time
 import colorsys
+import psutil
 
 class digimono_camera_main(object):
     def  __init__(self):
@@ -31,7 +32,14 @@ class digimono_camera_main(object):
         self.digi_process.make_process()
         #録画するためのcamera_captureの定義、プロセスの生成
         if(self.digi_process.permit_record_processed == True):
-            self.digi_record = camera_capture.digimono_camera_capture(self.digi_frame.frame_height, self.digi_frame.frame_width, self.digi_frame.frame_fps, True)
+            if(self.digi_process.permit_record_raw == True):
+                permit_delete = False
+            else:
+                permit_delete = True
+            self.digi_record = camera_capture.digimono_camera_capture(self.digi_frame.frame_height, self.digi_frame.frame_width, self.digi_frame.frame_fps, True, permit_delete)
+            permit_used_percent, total = self.digi_record.check_percent()
+            while(psutil.disk_usage('/').used / total >= permit_used_percent or psutil.disk_usage('/').free / (1024 * 1024 * 1024) <= 2):
+                time.sleep(0.2)
         #maskを処理するプロセスを開始する
         self.digi_process.start_mask_process()
         #startしたことを知らせる
