@@ -499,6 +499,7 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_record_processed == True):    
             self.digi_record.ret.value = self.digi_frame.get_ret()
         self.digi_process.log_end()
+        self.digi_process.user_end()
         print("----------------end---------------------")
 
  

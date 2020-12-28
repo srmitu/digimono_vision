@@ -212,6 +212,7 @@ class digimono_camera_process(object):
                     multiple_block = True
                     self.log.l_start(num)
                     self.dt1 = datetime.datetime.now()
+                    self.user.start_rise(num)
 
             elif(self.mode[num] == "END" and self.state[num] == ord('r')):#rise
                 if(self.cal_time == True and multiple_block == False):
@@ -219,6 +220,7 @@ class digimono_camera_process(object):
                     multiple_block = True
                     self.log.l_end(num)
                     self.dt2 = datetime.datetime.now()
+                    self.user.end_rise(num, self.dt2 - self.dt1)
             elif(self.mode[num] == "ERROR"):
                 #条件に応じてユーザーコードを実行します
                 if(self.state[num] == ord('r')):
@@ -255,9 +257,15 @@ class digimono_camera_process(object):
             dt=str(self.dt2 - self.dt1)
             cv2.putText(self.frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
 
+    def user_frame(self):
+        self.frame = self.user.edit_frame(self.frame)
+
     def log_end(self):
         self.log.l_finish()
         self.log.log_close()
+
+    def user_end(self):
+        self.user.finish_process()
 
     def clear_mask_process(self):
         for num in range(self.num_color):
