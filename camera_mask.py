@@ -2,11 +2,16 @@
 import cv2
 from multiprocessing import Manager, Value, Array, Event
 import time
+import numpy as np
 class digimono_camera_mask(object):
 
     def __init__(self, draw_color):
         #初期化
         self.draw_color = tuple(draw_color)
+        if(np.sum(self.draw_color) < 180):
+            self.draw_sub_color = (255,255,255)
+        else:
+            self.draw_sub_color = (0,0,0)
 
     def __enter__(self):
         return self
@@ -57,11 +62,13 @@ class digimono_camera_mask(object):
     def draw_contours(self, edit_frame, contours, thickness):
         return_edit_frame = edit_frame.copy()
         for num_contours in range(len(contours)):
-            return_edit_frame = cv2.drawContours(edit_frame, contours, num_contours, self.draw_color, thickness)
+            return_edit_frame = cv2.drawContours(edit_frame, contours, num_contours, self.draw_sub_color, thickness)
+            return_edit_frame = cv2.drawContours(edit_frame, contours, num_contours, self.draw_color, thickness-1)
         return return_edit_frame
     
     def draw_point(self, frame, point):
         return_frame = frame
         for num_point in range(len(point)):
-            return_frame = cv2.circle(frame, tuple(point[num_point]), 5, tuple(self.draw_color), -1)
+            return_frame = cv2.circle(frame, tuple(point[num_point]), 5, (self.draw_sub_color), -1)
+            return_frame = cv2.circle(frame, tuple(point[num_point]), 4, tuple(self.draw_color), -1)
         return return_frame

@@ -1,11 +1,16 @@
 import cv2
 from multiprocessing import Process, Value, Array
+import numpy as np
 import time
 
 class digimono_camera_position(object):
     def __init__(self, draw_color, type_shape, shape, mode):
         #初期化
         self.draw_color = tuple(draw_color) 
+        if(np.sum(self.draw_color) < 180):
+            self.draw_sub_color = (255,255,255)
+        else:
+            self.draw_sub_color = (0,0,0)
         self.type_shape = type_shape
         self.shape = shape
         self.mode = mode
@@ -66,7 +71,8 @@ class digimono_camera_position(object):
     def draw_in_shape_position(self, frame, in_shape_position):
         return_frame = frame
         for num_position in range(len(in_shape_position)):
-            return_frame = cv2.circle(frame, tuple(in_shape_position[num_position]), 20, tuple(self.draw_color), -1)
+            return_frame = cv2.circle(frame, tuple(in_shape_position[num_position]), 20, (self.draw_sub_color), -1)
+            return_frame = cv2.circle(frame, tuple(in_shape_position[num_position]), 18, tuple(self.draw_color), -1)
         return return_frame
 
     def draw_shape(self, frame):
@@ -74,12 +80,15 @@ class digimono_camera_position(object):
         if(self.type_shape == "rectangle"):
             left_up = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]-self.shape[1][1]))
             right_down = ((self.shape[0][0]+self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]))
-            return_frame = cv2.rectangle(frame, left_up, right_down, tuple(self.draw_color), 3)
+            return_frame = cv2.rectangle(frame, left_up, right_down, (self.draw_sub_color), 3)
+            return_frame = cv2.rectangle(frame, left_up, right_down, tuple(self.draw_color), 2)
         elif(self.type_shape == "ellipse"):
-            return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), tuple(self.draw_color), 3)
+            return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), (self.draw_sub_color), 3)
+            return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), tuple(self.draw_color), 2)
         name = self.mode
         text_position = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]+15))
-        cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(self.draw_color), 2)
+        cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (self.draw_sub_color), 2)
+        cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(self.draw_color), 1)
         return return_frame
         
 
