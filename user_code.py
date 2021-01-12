@@ -134,10 +134,9 @@ class digimono_user_code(object):
         result_files.extend(processed_files)
         self.sorted_result_files = sorted(result_files, key = lambda x: os.path.getctime(x), reverse=True)
 
-    #サイクルタイムを遅い順に並べた際に上から[how_many]個取り出す。
-    def pickup_cycle_slow_video(self, how_many):
+    #サイクルタイムのdataをもとに必要なもとの動画を取り出す。
+    def pickup_cycle_video(self, cycle_data):
         end_ok = False
-        cycle_data = self.pickup_log_cycle_slow(how_many)
         if not (len(cycle_data) == 0 and len(self.sorted_video_files) == 0):
             for num_data in range(len(cycle_data)):
                 for num_result in range(len(self.sorted_video_files)):
@@ -157,6 +156,66 @@ class digimono_user_code(object):
                         self.video_result.append(self.sorted_video_files[num_result])
                 end_ok = False
         #print(self.video_result)
+    #サイクルタイムのdataをもとに必要な加工の動画を取り出す。
+    def pickup_cycle_processed(self, cycle_data):
+        end_ok = False
+        if not (len(cycle_data) == 0 and len(self.sorted_processed_files) == 0):
+            for num_data in range(len(cycle_data)):
+                for num_result in range(len(self.sorted_processed_files)):
+                    if(os.path.getctime(self.sorted_video_files[num_result]) < float(cycle_data[num_data][3])):
+                        if not num_result == 0:
+                            if((self.sorted_processed_files[num_result - 1] in self.processed_result) == False):
+                                self.processed_result.append(self.sorted_processed_files[num_result - 1])
+                            end_ok = True
+                    if(end_ok == True and os.path.getctime(self.sorted_processed_files[num_result]) < float(cycle_data[num_data][1])):
+                        break
+                num_result = len(self.sorted_processed_files) - 1
+                if(end_ok == False and os.path.getctime(self.sorted_processed_files[num_result]) > float(cycle_data[num_data][3])):
+                    if((self.sorted_processed_files[num_result] in self.processed_result) == False):
+                        self.processed_result.append(self.sorted_processed_files[num_result])
+                if(os.path.getctime(self.sorted_video_files[num_result]) > float(cycle_data[num_data][1])):
+                    if((self.sorted_processed_files[num_result] in self.processed_result) == False):
+                        self.processed_result.append(self.sorted_processed_files[num_result])
+                end_ok = False
+        #print(self.video_result)
+    #errorや認識のdataをもとに必要なもとの動画を取り出す。
+    def pickup_error_recognition_video(self, data):
+        end_ok = False
+        if not (len(data) == 0 and len(self.sorted_video_files) == 0):
+            for num_data in range(len(data)):
+                for num_result in range(len(self.sorted_video_files)):
+                    if(os.path.getctime(self.sorted_video_files[num_result]) < float(data[num_data][1])):
+                        if not num_result == 0:
+                            if((self.sorted_video_files[num_result - 1] in self.video_result) == False):
+                                self.video_result.append(self.sorted_video_files[num_result - 1])
+                            end_ok = True
+                            break
+                num_result = len(self.sorted_video_files) - 1
+                if(end_ok == False and os.path.getctime(self.sorted_video_files[num_result]) > float(data[num_data][1])):
+                    if((self.sorted_video_files[num_result] in self.video_result) == False):
+                        self.video_result.append(self.sorted_video_files[num_result])
+                end_ok = False
+        #print(self.video_result)
+    #errorや認識のdataをもとに必要な加工の動画を取り出す。
+    def pickup_error_recognition_processed(self, data):
+        end_ok = False
+        if not (len(data) == 0 and len(self.sorted_processed_files) == 0):
+            for num_data in range(len(data)):
+                for num_result in range(len(self.sorted_processed_files)):
+                    if(os.path.getctime(self.sorted_video_files[num_result]) < float(data[num_data][1])):
+                        if not num_result == 0:
+                            if((self.sorted_processed_files[num_result - 1] in self.processed_result) == False):
+                                self.processed_result.append(self.sorted_processed_files[num_result - 1])
+                            end_ok = True
+                            break
+                num_result = len(self.sorted_processed_files) - 1
+                if(end_ok == False and os.path.getctime(self.sorted_processed_files[num_result]) > float(data[num_data][1])):
+                    if((self.sorted_processed_files[num_result] in self.processed_result) == False):
+                        self.processed_result.append(self.sorted_processed_files[num_result])
+                end_ok = False
+        #print(self.video_result)
+
+
 
     #取り出したものを推薦フォルダ(recommend)にコピーする
     def copy_to_recommend(self):
