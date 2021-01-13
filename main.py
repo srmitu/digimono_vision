@@ -6,4 +6,4 @@ digi_main = camera_main.digimono_camera_main()
 #無限ループ
 while(digi_main.get_ret() == True):
     digi_main.get_frame()
-
+digi_main.main_end()

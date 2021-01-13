@@ -91,14 +91,14 @@ class digimono_camera_frame(object):
         self.edit_resize_wide = wide
         self.edit_resize_vertical = vertical
 
-    def end_check(self):
-        if(cv2.waitKey(1) == 27):#ESC key
+    def end_check(self, key):
+        if(key == 27):#ESC key
             self.ret.value = False
             self.end_flag.value = True
 
-        if(self.ret == False):
+        if(self.ret.value == False):
             cv2.destroyAllWindows()
-            #return -1
+        return self.ret.value
 
     def kill(self):
         if(self.permit_record_raw == True):
