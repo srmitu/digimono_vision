@@ -29,12 +29,17 @@ define:
         camera_num:  0
         min_area:  500
         what_record:  "both"
+        record_time:  600
+        acolor_detection:
+                shape:  [[400,200],[40,40]]
+                num_attempt: 10
+        recommend_video:  True
+        recommend_processed:  True
+        num_recommend_slow:  0
+        num_recommend_fast:  0
 
 debug:
         #permit_show_video:  True
         permit_show_processed:  True
         permit_show_contours:  True
         none:
-        #color_detection:
-                shape:  [[400,200],[40,40]]
-                num_attempt: 10

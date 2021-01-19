@@ -501,6 +501,7 @@ class digimono_camera_main(object):
         self.clear_process()
         self.digi_process.log_end()
         self.digi_process.user_end()
+        self.digi_process.recommend()
         print("----------------end---------------------")
 
  
