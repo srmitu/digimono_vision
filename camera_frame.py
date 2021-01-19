@@ -7,7 +7,7 @@ from datetime import datetime
 import psutil
 
 class digimono_camera_frame(object):
-    def __init__(self, camera_num, permit_show_video, permit_record_raw):
+    def __init__(self, camera_num, permit_show_video, permit_record_raw, record_time):
         self.frame = Manager().list()
         self.frame_height = Value('i', 0)
         self.frame_width = Value('i', 0)
@@ -23,7 +23,9 @@ class digimono_camera_frame(object):
         self.end_flag.value = False
         self.record_kill_flag = Value('b')
         self.record_kill_flag.value = False
+        self.record_time = record_time
         self.permit_record_raw = permit_record_raw
+
 
         self.p_frame = Process(target=self.frame_detect, args=(self.frame, camera_num, self.request, permit_show_video, self.permit_record_raw))
         if(permit_record_raw == False):
@@ -39,7 +41,7 @@ class digimono_camera_frame(object):
         #capture.set(cv2.CAP_PROP_FPS, 5)
         self.frame_fps.value = int(capture.get(cv2.CAP_PROP_FPS))
         if(record_raw == True):
-            self.digi_record = camera_capture.digimono_camera_capture(self.frame_height, self.frame_width, self.frame_fps, False, True)
+            self.digi_record = camera_capture.digimono_camera_capture(self.frame_height, self.frame_width, self.frame_fps, False, True, self.record_time)
             permit_used_percent, total = self.digi_record.check_percent()
             while(psutil.disk_usage('/').used / total >= permit_used_percent or psutil.disk_usage('/').free / (1024 * 1024 * 1024) <= 2):
                 time.sleep(0.2)

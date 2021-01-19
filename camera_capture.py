@@ -7,7 +7,7 @@ import psutil
 import shutil
 
 class digimono_camera_capture(object):
-    def __init__(self, height, wide, fps, bool_processed, bool_master):
+    def __init__(self, height, wide, fps, bool_processed, bool_master, record_time):
         self.wide = wide.value
         self.height = height.value
         if(bool_processed == True):
@@ -21,6 +21,7 @@ class digimono_camera_capture(object):
         self.ret.value = True
         self.task = Value('b')
         self.total = psutil.disk_usage('/').total
+        self.record_time = record_time
         # 設定
         self.used_percent = 0.9
         # マルチスレッド
@@ -89,7 +90,7 @@ class digimono_camera_capture(object):
                 break
             dt_now = datetime.datetime.now()
             dt = dt_now - dt_start
-            if(dt.seconds >= 60*60):
+            if(dt.seconds >= self.record_time):
                 print(str(video_name) + "...finish")
                 writer.release()
                 dt_start = dt_now

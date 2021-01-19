@@ -21,7 +21,7 @@ class digimono_camera_main(object):
     def main_init(self):
         self.key = -1
         #camera_frameの定義
-        self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, self.digi_process.permit_record_raw)
+        self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, self.digi_process.permit_record_raw, self.digi_process.record_time)
         #カメラ処理をするための初期化
         self.digi_process.initialize()
         #フレームを取得
@@ -34,7 +34,7 @@ class digimono_camera_main(object):
                 permit_delete = False
             else:
                 permit_delete = True
-            self.digi_record = camera_capture.digimono_camera_capture(self.digi_frame.frame_height, self.digi_frame.frame_width, self.digi_frame.frame_fps, True, permit_delete)
+            self.digi_record = camera_capture.digimono_camera_capture(self.digi_frame.frame_height, self.digi_frame.frame_width, self.digi_frame.frame_fps, True, permit_delete, self.digi_process.record_time)
             permit_used_percent, total = self.digi_record.check_percent()
             while(psutil.disk_usage('/').used / total >= permit_used_percent or psutil.disk_usage('/').free / (1024 * 1024 * 1024) <= 2):
                 time.sleep(0.2)
@@ -46,7 +46,7 @@ class digimono_camera_main(object):
     def main_init_color(self):
         self.key = -1
         #camera_frameの定義
-        self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, False)
+        self.digi_frame = camera_frame.digimono_camera_frame(self.digi_process.camera_num, self.digi_process.permit_show_video, False, self.digi_process.record_time)
         #カメラ処理をするための初期化
         self.digi_process.initialize()
         self.color_capture = False
