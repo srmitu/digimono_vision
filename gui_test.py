@@ -48,13 +48,13 @@ class Window(QWidget):
         font=QFont()
         font.setPointSize(15)
         # shape parameta
-        self.oxedit=QLineEdit("",self)
+        self.oxedit=QLineEdit("0",self)
         self.oxedit.setFont(font)
-        self.oyedit=QLineEdit("",self)
+        self.oyedit=QLineEdit("0",self)
         self.oyedit.setFont(font)
-        self.xedit=QLineEdit("",self)
+        self.xedit=QLineEdit("0",self)
         self.xedit.setFont(font)
-        self.yedit=QLineEdit("",self)
+        self.yedit=QLineEdit("0",self)
         self.yedit.setFont(font)
         center=QLabel('中心座標')
         ox=QLabel('x')
@@ -81,9 +81,16 @@ class Window(QWidget):
         button.clicked.connect(self.on_click)
         apbutton = QPushButton("apply", self)
         apbutton.clicked.connect(self.on_apply)
+        dlbutton = QPushButton("remove", self)
+        dlbutton.clicked.connect(self.on_remove)
+        self.dledit=QLineEdit("0",self)
+        self.dledit.setFont(font)
+        removehbox = QHBoxLayout()
+        removehbox.addWidget(dlbutton)
+        removehbox.addWidget(self.dledit)
         # ラベル作成、初期の名前を設定する
-        self.lbl = QLabel("楕円", self)
-        self.activeShape = "ellipse"
+        self.lbl = QLabel("長方形", self)
+        self.activeShape = "rectangle"
 
         # QComboBoxオブジェクトの作成
         combo = QComboBox(self)
@@ -99,9 +106,11 @@ class Window(QWidget):
         self.label.setAlignment(Qt.AlignCenter)
         
         vbox = QVBoxLayout()
+        vbox.addStretch(1)
         vbox.addWidget(combo)
         vbox.addWidget(self.lbl)
         vbox.addWidget(apbutton)
+        vbox.addLayout(removehbox)
         vbox.addLayout(grid)
         vbox.addWidget(button)
         hbox = QHBoxLayout()
@@ -146,7 +155,25 @@ class Window(QWidget):
         with open('config.yml', 'w') as f:
             yaml.dump(data, f, default_flow_style=False)
         digi_main.reboot()
-        time.sleep(10)
+        time.sleep(20)
+
+    def on_remove(self):
+        print("clicked remove")
+        string = self.dledit.text()
+        num = int(string, 10)
+        with open('config.yml', 'r') as f:
+            rawdata = yaml.safe_load(f)
+            del rawdata['shape'][num]
+            num_keys = rawdata['shape'].keys()
+            data = rawdata.copy()
+            i = 0
+            for key in list(rawdata['shape']) :
+                data['shape'][i] = rawdata['shape'][key]
+                i += 1
+        with open('config.yml', 'w') as f:
+            yaml.dump(data, f, default_flow_style=False)
+        digi_main.reboot()
+        time.sleep(20)
 
 
     def on_click(self):
