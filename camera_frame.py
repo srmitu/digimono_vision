@@ -96,9 +96,11 @@ class digimono_camera_frame(object):
             self.ret.value = False
             self.end_flag.value = True
 
-        if(self.ret == False):
+        if(self.ret.value == False):
             cv2.destroyAllWindows()
             #return -1
+        return self.ret.value
+
 
     def kill(self):
         if(self.permit_record_raw == True):

@@ -17,9 +17,10 @@ class digimono_camera_main(object):
             self.main_init()
         else:
             self.main_init_color()
+    '''
     def __del__(self):
         self.main_end()
-
+    '''
     def main_init(self):
         self.key = -1
         #camera_frameの定義
@@ -103,7 +104,7 @@ class digimono_camera_main(object):
         #結果表示・終了判定
         if(self.digi_process.permit_show_processed == True):
             self.digi_frame.show_edit_frame(self.digi_process.frame)
-            self.digi_frame.end_check()
+        self.end_check()
         return self.digi_process.frame
 
     def get_frame_color(self):
@@ -205,7 +206,7 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             self.digi_frame.show_edit_frame(return_frame)
             if(self.color_capture == False):
-                self.digi_frame.end_check()
+                self.end_check()
         
         return return_frame
             
@@ -273,7 +274,11 @@ class digimono_camera_main(object):
 
     def end_check(self):
         return_bool = False
+        if(self.digi_process.permit_show_video == True):
+            return_bool = self.digi_frame.end_check()
         if(self.comm_end_check == True):
+            self.digi_frame.ret.value = False
+            self.digi_frame.end_flag.value = True
             self.comm_end_check = False
             return_bool = True
         return return_bool
@@ -495,9 +500,11 @@ class digimono_camera_main(object):
             self.comm_threshold = threshold
     
     def main_end(self):
-        self.digi_frame.end_flag = True
-        if(self.digi_process.permit_record_processed == True):    
-            self.digi_record.ret.value = self.digi_frame.get_ret()
+        print("call end")
+        #self.digi_frame.end_flag = True
+        #if(self.digi_process.permit_record_processed == True):    
+        #    self.digi_record.ret.value = self.digi_frame.get_ret()
+        self.clear_process()
         self.digi_process.log_end()
         self.digi_process.user_end()
         print("----------------end---------------------")

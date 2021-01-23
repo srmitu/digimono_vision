@@ -71,7 +71,13 @@ class digimono_user_code(object):
     #すべての処理が終了した際に行うものを集めたメソッド
     def finish_process(self):
         self.log.log_close()
+        self.video_result = []
+        self.processed_result = []
         #ここから下がユーザーコードになります
+        self.get_log_files()
+        self.get_result_files()
+        self.pickup_cycle_video(self.pickup_log_cycle_slow(2))
+        self.copy_to_recommend()
 
     #-------------------ここから上は通常の処理で呼び出されます------------------
     #--------------注意：ここから下は通常の処理では呼び出されません-------------
