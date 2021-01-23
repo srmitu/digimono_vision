@@ -19,7 +19,6 @@ class Thread(QThread):
 
     def run(self):
         while digi_main.get_ret():
-            print("poeeeeeeee!!!!!!")
             # Qt はチャンネル順が RGB なので変換する。
             rgbImage = cv2.cvtColor(digi_main.get_frame(), cv2.COLOR_BGR2RGB)
             # numpy 配列を QImage に変換する。
@@ -83,8 +82,8 @@ class Window(QWidget):
         apbutton = QPushButton("apply", self)
         apbutton.clicked.connect(self.on_apply)
         # ラベル作成、初期の名前を設定する
-        self.lbl = QLabel("図形", self)
-        self.activeShape = " "
+        self.lbl = QLabel("楕円", self)
+        self.activeShape = "ellipse"
 
         # QComboBoxオブジェクトの作成
         combo = QComboBox(self)
@@ -146,13 +145,12 @@ class Window(QWidget):
             data['shape'][len(num_keys)] = {'num_color':color, 'mode':mode, 'type_shape':shape_type, 'shape':[[ox, oy], [x, y]]}
         with open('config.yml', 'w') as f:
             yaml.dump(data, f, default_flow_style=False)
-        print("poeeeeeeeeeeeeeeeeeeee!!!!!!")
         digi_main.reboot()
         time.sleep(10)
 
 
     def on_click(self):
-        print("clicked finish!")
+        print("clicked exit")
         digi_main.put_end_check(True)
         digi_main.main_end()
         time.sleep(10)
