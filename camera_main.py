@@ -496,11 +496,12 @@ class digimono_camera_main(object):
             self.comm_threshold = threshold
     
     def main_end(self):
-        if(self.digi_process.permit_record_processed == True):    
+        if(self.digi_process.permit_color_detect == False and self.digi_process.permit_record_processed == True):
             self.digi_record.ret.value = self.digi_frame.get_ret()
         self.clear_process()
         self.digi_process.log_end()
         self.digi_process.user_end()
+        time.sleep(1)
         self.digi_process.recommend()
         print("----------------end---------------------")
 

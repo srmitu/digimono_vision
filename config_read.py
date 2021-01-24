@@ -48,7 +48,7 @@ class digimono_config_read(object):
         if(('recommend_processed' in config_data['define']) == True):
             recommend_processed = config_data['define']['recommend_processed']
         if(('num_recommend_slow' in config_data['define']) == True):
-            num_recoomend_slow = config_data['define']['num_recommend_slow']
+            num_recommend_slow = config_data['define']['num_recommend_slow']
         if(('num_recommend_fast' in config_data['define']) == True):
             num_recommend_fast = config_data['define']['num_recommend_fast']
 
