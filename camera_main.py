@@ -70,6 +70,8 @@ class digimono_camera_main(object):
         self.up =shape[0][1] - shape[1][1]
         self.right = shape[0][0] + shape[1][0]
         self.down = shape[0][1] + shape[1][1]
+        self.w_m = 0
+        self.h_m = 0
         self.digi_process.color_detect_start(self.left, self.right, self.up, self.down)
         print("----------------start_calibration---------------------")
         
@@ -123,7 +125,7 @@ class digimono_camera_main(object):
                     self.old_state = True
                     print("color_record_end")
                 if(self.digi_process.wait_task() == False):
-                    mode = 0
+                    #mode = 0
                     self.color_detect_end(self.color_mode)
                     print("----------------calibration_end---------------------")
                     self.old_state = False
@@ -161,6 +163,7 @@ class digimono_camera_main(object):
             self.color_undo = self.color_undo_check()
             self.color_mode = self.color_mode_check()
             self.color_change, self.color_threshold = self.color_threshold_check()
+            self.color_move()
         return_frame = []
         
         if(self.color_capture_already == True):
@@ -180,8 +183,8 @@ class digimono_camera_main(object):
         if(return_frame == []):
             return_frame = self.digi_frame.get_frame()
         shape = self.digi_process.color_detect_shape
-        return_frame = cv2.rectangle(return_frame, tuple([self.left, self.up]), tuple([self.right, self.down]), (255,255,255), 5)
-        return_frame = cv2.rectangle(return_frame, tuple([self.left, self.up]), tuple([self.right, self.down]), (0,0,0), 3)
+        return_frame = cv2.rectangle(return_frame, tuple([self.left + self.w_m, self.up + self.h_m]), tuple([self.right + self.w_m, self.down + self.h_m]), (255,255,255), 5)
+        return_frame = cv2.rectangle(return_frame, tuple([self.left + self.w_m, self.up + self.h_m]), tuple([self.right + self.w_m, self.down + self.h_m]), (0,0,0), 3)
         if(self.color_mode == 1):
             return_frame = cv2.putText(return_frame, "+", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
             return_frame = cv2.putText(return_frame, "+", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
@@ -189,8 +192,8 @@ class digimono_camera_main(object):
             return_frame = cv2.putText(return_frame, "-", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
             return_frame = cv2.putText(return_frame, "-", (600,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
         #枠の中心のHSV値を表示する(目安)
-        point_x = int((self.right - self.left)/2 + self.left)
-        point_y = int((self.down - self.up)/2 + self.up)
+        point_x = int((self.right - self.left)/2 + self.left + self.w_m)
+        point_y = int((self.down - self.up)/2 + self.up + self.h_m)
         h,s,v = colorsys.rgb_to_hsv(return_frame[point_y][point_x][2]/255, return_frame[point_y][point_x][1]/255, return_frame[point_y][point_x][0]/255)
         return_frame = cv2.putText(return_frame, str(tuple([int(h*180), int(s*255), int(v*255)])), (400,70), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,0), 2)
         return_frame = cv2.putText(return_frame, str(tuple([int(h*180), int(s*255), int(v*255)])), (400,70), cv2.FONT_HERSHEY_PLAIN, 2, (255,2555,255), 1)
@@ -211,7 +214,7 @@ class digimono_camera_main(object):
 
     def color_detect(self):
         #生データから情報を得る
-        self.digi_process.color_detect(self.left, self.right, self.up, self.down)
+        self.digi_process.color_detect(self.left + self.w_m, self.right + self.w_m, self.up + self.h_m, self.down + self.h_m)
         
     def color_detect_end(self, mode):
         #結果をプロットする
@@ -337,6 +340,26 @@ class digimono_camera_main(object):
             return_mode = self.comm_color_mode
 
         return return_mode
+    def color_move(self):
+        if(self.digi_process.permit_show_processed == True):
+            h_m = 0
+            w_m = 0
+            if(self.key == ord('w')):
+                h_m = -10
+            elif(self.key == ord('s')):
+                h_m = +10
+            elif(self.key == ord('a')):
+                w_m = -10
+            elif(self.key == ord('d')):
+                w_m = +10
+            if((self.left + self.w_m + w_m) >= 0 and (self.right + self.w_m + w_m) <= self.digi_frame.frame_width.value):
+                self.w_m += w_m
+            if((self.up + self.h_m + h_m) >= 0 and (self.down + self.h_m + h_m) <= self.digi_frame.frame_height.value):
+                self.h_m += h_m
+            if(self.key == 32):#space Key
+                self.h_m = 0
+                self.w_m = 0
+
         
     def color_threshold_check(self):
         return_threshold = self.color_threshold
@@ -438,6 +461,7 @@ class digimono_camera_main(object):
 
         return bool_chage, return_threshold
 
+
     #ここからはmain関数にて呼び出されるメソッド
 
     def get_frame(self):
@@ -471,6 +495,12 @@ class digimono_camera_main(object):
 
     def put_color_redo(self):
         self.put_color_undo()
+
+    def put_color_move(self, w_m, h_m):
+        if(self.left - w_m >= 0 and self.right + w_m <= self.digi_frame.frame_width.value):
+            self.w_m = w_m
+        if(self.up - h_m >= 0 and self.down + h_m <= self.digi_frame.frame_height.value):
+            self.h_m = h_m
 
     def put_color_mode(self, number):
         if(number > 1):
