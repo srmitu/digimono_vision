@@ -26,9 +26,9 @@ class Thread(QThread):
                 # シグナルを送出する。
                 self.frameGrabbed.emit(qImage)
                 # スリープを入れる。1000 / fps 分入れる
-                QThread.msleep(1000 / 30)
-            except:
-                pass
+                QThread.msleep(1000 // 30)
+        except:
+            pass
 
 
 class Window(QWidget):
@@ -155,7 +155,7 @@ class Window(QWidget):
             data['shape'][len(num_keys)] = {'num_color':color, 'mode':mode, 'type_shape':shape_type, 'shape':[[ox, oy], [x, y]]}
         with open('config.yml', 'w') as f:
             yaml.dump(data, f, default_flow_style=False)
-        digi_main.reboot()
+        digi_main.put_reboot_check()
         time.sleep(20)
 
     def on_remove(self):
@@ -173,7 +173,7 @@ class Window(QWidget):
                 i += 1
         with open('config.yml', 'w') as f:
             yaml.dump(data, f, default_flow_style=False)
-        digi_main.reboot()
+        digi_main.put_reboot_check()
         time.sleep(20)
 
 
