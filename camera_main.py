@@ -461,6 +461,9 @@ class digimono_camera_main(object):
 
         return bool_chage, return_threshold
 
+    def force_show_processed(self):
+        self.digi_process.permit_show_processed = True
+
 
     #ここからはmain関数にて呼び出されるメソッド
 
@@ -535,4 +538,10 @@ class digimono_camera_main(object):
         self.digi_process.recommend()
         print("----------------end---------------------")
 
- 
+#GUIなしで起動
+if __name__ == "__main__":
+    digi_main = digimono_camera_main()
+    digi_main.force_show_processed() 
+    while digi_main.get_ret():
+        digi_main.get_frame()
+    digi_main.main_end()
