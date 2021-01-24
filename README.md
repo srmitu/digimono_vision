@@ -50,7 +50,7 @@ cd digimono_vision
 カメラはraspberry piの電源を入れる前にあらかじめ接続しておいてください。<br>
 main.pyを実行してください。
 ```
-python3 main.py
+python3 camera_main.py
 ```
 ## モード
 設定ファイルを変更することにより、このプログラムは大きく分けて2種類の挙動をします。
