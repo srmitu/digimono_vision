@@ -16,16 +16,19 @@ class Thread(QThread):
     frameGrabbed = pyqtSignal(QImage)
 
     def run(self):
-        while digi_main.get_ret():
-            # Qt はチャンネル順が RGB なので変換する。
-            rgbImage = cv2.cvtColor(digi_main.get_frame(), cv2.COLOR_BGR2RGB)
-            # numpy 配列を QImage に変換する。
-            qImage = QImage(
-                rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
-            # シグナルを送出する。
-            self.frameGrabbed.emit(qImage)
-            # スリープを入れる。1000 / fps 分入れる
-            QThread.msleep(1000 / 30)
+        try:
+            while digi_main.get_ret():
+                # Qt はチャンネル順が RGB なので変換する。
+                rgbImage = cv2.cvtColor(digi_main.get_frame(), cv2.COLOR_BGR2RGB)
+                # numpy 配列を QImage に変換する。
+                qImage = QImage(
+                    rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+                # シグナルを送出する。
+                self.frameGrabbed.emit(qImage)
+                # スリープを入れる。1000 / fps 分入れる
+                QThread.msleep(1000 / 30)
+            except:
+                pass
 
 
 class Window(QWidget):
