@@ -25,9 +25,13 @@ class digimono_get_color(object):
         self.down = down
         self.area = (right - left) * (down - up) * num_attempt
         self.add = 0
+        self.old_add = 0
         self.minus_h = [0] * 180
         self.minus_s = [0] * 256
         self.minus_v = [0] * 256
+        self.old_minus_h = [0] * 180
+        self.old_minus_s = [0] * 256
+        self.old_minus_v = [0] * 256
         self.already = Value('i', 0)
         self.total = Value('i', 0)
         self.h_array = [0] * 180
@@ -36,6 +40,7 @@ class digimono_get_color(object):
         self.old_h_array = [0] * 180
         self.old_s_array = [0] * 256
         self.old_v_array = [0] * 256
+        self.area_percent = 0.75
         self.p_color =  Process(target=self.color_detect_p, args=(self.hsv, self.task, self.end_flag, self.shared_h_array, self.shared_s_array, self.shared_v_array, self.already, self.total))
         self.p_color.daemon = True
         self.p_color.start()
@@ -119,19 +124,33 @@ class digimono_get_color(object):
         i = 0
         for num in range(256):
             if(num < 180):
-                self.h_array[num] ,self.old_h_array[num] = self.old_h_array[num], self.h_array[num]
+                self.h_array[num], self.old_h_array[num] = self.old_h_array[num], self.h_array[num]
+                self.minus_h[num], self.old_minus_h[num] = self.old_minus_h[num], self.minus_h[num]
             self.s_array[num] ,self.old_s_array[num] = self.old_s_array[num], self.s_array[num]
             self.v_array[num] ,self.old_v_array[num] = self.old_v_array[num], self.v_array[num]
+            self.minus_s[num], self.old_minus_s[num] = self.old_minus_s[num], self.minus_s[num]
+            self.minus_v[num], self.old_minus_v[num] = self.old_minus_v[num], self.minus_v[num]
+        self.add, self.old_add = self.old_add, self.add
         threshold = self.color_detect(0, False)
         return threshold
 
     def color_change(self, threshold):
-        print(threshold)
+        print("threshold", threshold)
+        #初期化
+        self.old_add = self.add
         self.old_h_array = deepcopy(self.h_array)
         self.old_s_array = deepcopy(self.s_array)
         self.old_v_array = deepcopy(self.v_array)
+        self.old_minus_h = deepcopy(self.minus_h)
+        self.old_minus_s = deepcopy(self.minus_s)
+        self.old_minus_v = deepcopy(self.minus_v)
+        self.add = 0
+        self.minus_h = [0] * 180
+        self.minus_s = [0] * 256
+        self.minus_v = [0] * 256
         line_h = np.array(range(180))
         line_s_v = np.array(range(256))
+
         if(len(threshold) == 2):
             h_range = (threshold[0][0]-1) - threshold[1][0]
             s_range = (threshold[0][1]-1) - threshold[1][1]
@@ -145,21 +164,21 @@ class digimono_get_color(object):
             h_array = norm.pdf(line_h, h_ave, h_std)
             s_array = norm.pdf(line_s_v, s_ave, s_std)
             v_array = norm.pdf(line_s_v, v_ave, v_std)
-            self.h_array = self.area * h_array * (0.90 + 0.0)
-            self.s_array = self.area * s_array * (0.90 + 0.0)
-            self.v_array = self.area * v_array * (0.90 + 0.0)
+            self.h_array = self.area * h_array * (self.area_percent + 0.0)
+            self.s_array = self.area * s_array * (self.area_percent + 0.0)
+            self.v_array = self.area * v_array * (self.area_percent + 0.0)
             for num in range(256):
                 if(num < 180):
                     if(threshold[1][0] <= num and num < threshold[0][0]):
-                        self.h_array[num] += self.area * 0.90 * (0.317 + 0.0) / h_range
+                        self.h_array[num] += self.area * self.area_percent * (0.3 + 0.0) / h_range#0.3はちょい+にしたかったから。マジックナンバー
                     else:
                         self.h_array[num] = 0
                 if(threshold[1][1] <= num and num < threshold[0][1]):
-                    self.s_array[num] += self.area * 0.90 * (0.317 + 0.0) / s_range
+                    self.s_array[num] += self.area * self.area_percent * (0.3 + 0.0) / s_range
                 else:
                     self.s_array[num] = 0
                 if(threshold[1][2] <= num and num < threshold[0][2]):
-                    self.v_array[num] += self.area * 0.90 * (0.317 + 0.0) / v_range
+                    self.v_array[num] += self.area * self.area_percent * (0.3 + 0.0) / v_range
                 else:
                     self.v_array[num] = 0
         if(len(threshold) == 4):
@@ -180,29 +199,39 @@ class digimono_get_color(object):
             h2_array = norm.pdf(line_h, h2_ave, h2_std)
             s_array = norm.pdf(line_s_v, s_ave, s_std)
             v_array = norm.pdf(line_s_v, v_ave, v_std)
-            h1_array_det = self.area * h1_array * (0.45 + 0.0)
-            h2_array_det = self.area * h2_array * (0.45 + 0.0)
-            self.s_array = self.area * s_array * (0.90 + 0.0)
-            self.v_array = self.area * v_array * (0.90 + 0.0)
+            h1_array_det = self.area * h1_array * (self.area_percent / 2 + 0.0)
+            h2_array_det = self.area * h2_array * (self.area_percent / 2 + 0.0)
+            self.s_array = self.area * s_array * (self.area_percent + 0.0)
+            self.v_array = self.area * v_array * (self.area_percent + 0.0)
             for num in range(256):
                 if(num < (180/2)):
                     if(threshold[1][0] <= num and num < threshold[0][0]):
-                        h1_array_det[num] += self.area * 0.45 * (0.317 + 0.0) / h1_range
+                        h1_array_det[num] += self.area * self.area_percent / 2 * (0.3 + 0.0) / h1_range
                     else:
                         h1_array_det[num] = 0
                     if(threshold[3][0] <= num + 90 and num + 90 < threshold[2][0]):
-                        h2_array_det[num] += self.area * 0.45 * (0.317 + 0.0) / h2_range
+                        h2_array_det[num] += self.area * self.area_percent / 2 * (0.3 + 0.0) / h2_range
                     else:
                         h2_array_det[num] = 0
                 if(threshold[1][1] <= num and num < threshold[0][1]):
-                    self.s_array[num] += self.area * 0.90 * (0.317 + 0.0) / s_range
+                    self.s_array[num] += self.area * self.area_percent * (0.3 + 0.0) / s_range
                 else:
                     self.s_array[num] = 0
                 if(threshold[1][2] <= num and num < threshold[0][2]):
-                    self.v_array[num] += self.area * 0.90 * (0.317 + 0.0) / v_range
+                    self.v_array[num] += self.area * self.area_percent * (0.3 + 0.0) / v_range
                 else:
                     self.v_array[num] = 0
             self.h_array = np.append(h1_array_det, h2_array_det)
+        #グラフ表示用
+        """
+        shared_h_array = deepcopy(self.shared_h_array)
+        shared_s_array = deepcopy(self.shared_s_array)
+        shared_v_array = deepcopy(self.shared_v_array)
+
+        self.p_draw = Process(target=self.draw, args=(self.h_array, self.s_array, self.v_array, shared_h_array, shared_s_array, shared_v_array))
+        self.p_draw.daemon = True
+        self.p_draw.start()
+        """
 
     def kill(self):
         self.end_flag.value = True
@@ -249,9 +278,9 @@ class digimono_get_color(object):
         return_num1 = 0
         return_num2 = len(array)
         if(len(array)  > 90):
-            area = (self.area + (self.area/2) * self.add + sum(minus_array)) * 0.90
+            area = (self.area + (self.area/2) * self.add + sum(minus_array)) * self.area_percent
         else:
-            area = (self.area + (self.area/2) * self.add + sum(minus_array)) * 0.45
+            area = (self.area + (self.area/2) * self.add + sum(minus_array)) * self.area_percent / 2
         l = 0
         r = 0
         for num in range(len(array)):
@@ -262,13 +291,36 @@ class digimono_get_color(object):
             if(median_num - l < 0):
                 l -= 1
                 r += 1
-            elif(median_num + r > len(array)):
+            elif(median_num + r + 1 > len(array)):
                 r -= 1
                 l += 1
-            area_det = np.sum(array[(median_num - l):(median_num + r + 1)])
-            if(area_det >= area):
-                if not(num ==0):
-                    break
+            if(np.sum(array[(median_num - l):(median_num + r + 1)]) >= area and num > 0):
+                break
+        #ありえない値まで広がってしまったときの防御策
+        while (array[median_num - l] <= 10 or array[median_num -l] <= area * 0.001):
+            l -= 1
+        while (array[median_num + r] <= 10 or array[median_num + r] <= area * 0.001):
+            r -= 1
+        #幅を増やす(精度が悪いようだったらここのパラメータをいじる)
+        plus_area = 0
+        if(len(array) > 180):
+            plus_area = 10
+        elif(len(array) > 90):
+            plus_area = 5
+        else:
+            plus_area = 2
+
+        for num in range(plus_area):
+            l += 1
+            if(median_num -l <= 0):
+                l -= 1
+                break
+        for num in range(plus_area):
+            r += 1
+            if(median_num + r + 1 >= len(array)):
+                r -= 1
+                break
+
         return_num1 = median_num - l
         return_num2 = median_num + r + 1
         return return_num1, return_num2
@@ -281,9 +333,13 @@ class digimono_get_color(object):
         shared_s_array = [0] * 256
         shared_v_array = [0] * 256
         if(status == True):
+            self.old_add = self.add
             self.old_h_array = deepcopy(self.h_array)
             self.old_s_array = deepcopy(self.s_array)
             self.old_v_array = deepcopy(self.v_array)
+            self.old_minus_h = deepcopy(self.minus_h)
+            self.old_minus_s = deepcopy(self.minus_s)
+            self.old_minus_v = deepcopy(self.minus_v)
             old_h_array = deepcopy(self.old_h_array)
             old_s_array = deepcopy(self.old_s_array)
             old_v_array = deepcopy(self.old_v_array)
@@ -291,7 +347,7 @@ class digimono_get_color(object):
             shared_s_array = deepcopy(self.shared_s_array)
             shared_v_array = deepcopy(self.shared_v_array)
         if(mode == 1):
-            print("+")
+            print("\n+")
             self.add += 1
             for num in range(256):
                 if(num < 180):
@@ -299,7 +355,7 @@ class digimono_get_color(object):
                 self.s_array[num] = old_s_array[num] + shared_s_array[num]
                 self.v_array[num] = old_v_array[num] + shared_v_array[num]
         elif(mode == -1):
-            print("-")
+            print("\n-")
             self.add = self.add - 1
             if(self.area + (self.area /2) * self.add < 0):
                 self.non_area = True
@@ -348,9 +404,7 @@ class digimono_get_color(object):
         else:
             h_a_f1_std_num1, h_a_f1_std_num2 = self.found_std_num(h_a_f1_med_num, h_a_f1, self.minus_h[:90]) 
             h_a_f2_std_num1, h_a_f2_std_num2 = self.found_std_num(h_a_f2_med_num - 90, h_a_f2, self.minus_h[90:])
-            threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1]]
-            threshold.append([h_a_f2_std_num2 + 90, s_a_std_num2, v_a_std_num2])
-            threshold.append([h_a_f2_std_num1 + 90, s_a_std_num1, v_a_std_num1])
-
+            threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1], [h_a_f2_std_num2 + 90, s_a_std_num2, v_a_std_num2], [h_a_f2_std_num1 + 90, s_a_std_num1, v_a_std_num1]]
+        
         print("threshold", threshold)
         return threshold
