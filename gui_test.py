@@ -5,8 +5,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import yaml
-import camera_frame
-import camera_capture
 import camera_main
 import time
 
@@ -180,7 +178,6 @@ class Window(QWidget):
         print("clicked exit")
         digi_main.put_end_check(True)
         digi_main.main_end()
-        time.sleep(10)
         os._exit(0)
         sys.exit()
 
