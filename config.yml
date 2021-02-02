@@ -39,7 +39,4 @@ define:
         num_recommend_fast:  0
 
 debug:
-        #permit_show_video:  True
-        permit_show_processed:  True
         permit_show_contours:  True
-        none:
