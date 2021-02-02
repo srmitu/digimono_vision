@@ -9,10 +9,12 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 import time
 from copy import deepcopy
+import logging
 
 class digimono_get_color(object):
     def __init__(self, left, right, up, down, num_attempt):
-        print("start_digimono_get_color")
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("start_digimono_get_color")
         self.hsv = Manager().list()
         self.color_init()
         self.end_flag = Value('b')
@@ -60,7 +62,7 @@ class digimono_get_color(object):
                 if(num < 180):
                     h[num] += np.count_nonzero(frame_h == num)
             already.value += 1
-            print("done " + str(already.value) + "/" + str(total.value), end="\r")
+            self.logger.info("done " + str(already.value) + "/" + str(total.value))
             hsv.pop(0)
             if(len(hsv) <= 0):
                 task.value = False
@@ -70,7 +72,7 @@ class digimono_get_color(object):
                 task.value = True
             while(task.value == False and end_flag.value == False):
                 time.sleep(0.02)
-        print("end_color_detect_process")
+        self.logger.info("end_color_detect_process")
     
     def color_init(self):
         self.shared_h_array = Manager().list()
@@ -135,7 +137,7 @@ class digimono_get_color(object):
         return threshold
 
     def color_change(self, threshold):
-        print("threshold", threshold)
+        self.logger.info("threshold " +  str(threshold))
         #初期化
         self.old_add = self.add
         self.old_h_array = deepcopy(self.h_array)
@@ -259,7 +261,6 @@ class digimono_get_color(object):
         axV.set_xlabel("V")
         axV.set_ylabel("取得回数")
         axV.grid(True)
-        print("show")
         
         plt.show(block=True)
 
@@ -347,7 +348,7 @@ class digimono_get_color(object):
             shared_s_array = deepcopy(self.shared_s_array)
             shared_v_array = deepcopy(self.shared_v_array)
         if(mode == 1):
-            print("\n+")
+            self.logger.info("\n+")
             self.add += 1
             for num in range(256):
                 if(num < 180):
@@ -355,7 +356,7 @@ class digimono_get_color(object):
                 self.s_array[num] = old_s_array[num] + shared_s_array[num]
                 self.v_array[num] = old_v_array[num] + shared_v_array[num]
         elif(mode == -1):
-            print("\n-")
+            self.logger.info("\n-")
             self.add = self.add - 1
             if(self.area + (self.area /2) * self.add < 0):
                 self.non_area = True
@@ -406,5 +407,5 @@ class digimono_get_color(object):
             h_a_f2_std_num1, h_a_f2_std_num2 = self.found_std_num(h_a_f2_med_num - 90, h_a_f2, self.minus_h[90:])
             threshold = [[h_a_f1_std_num2, s_a_std_num2, v_a_std_num2], [h_a_f1_std_num1, s_a_std_num1, v_a_std_num1], [h_a_f2_std_num2 + 90, s_a_std_num2, v_a_std_num2], [h_a_f2_std_num1 + 90, s_a_std_num1, v_a_std_num1]]
         
-        print("threshold", threshold)
+        self.logger.info("threshold " + str(threshold))
         return threshold

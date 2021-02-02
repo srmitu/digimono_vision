@@ -2,9 +2,11 @@ import csv
 import time
 import os
 import datetime
+import logging
 
 class digimono_logger(object):
     def __init__(self, create_type):
+        self.logger = logging.getLogger(__name__)
         self.task_start = False
         self.task_end = False
         self.task_error = False
@@ -102,6 +104,6 @@ class digimono_logger(object):
         if(self.mode_add == True):
             self.logger_error_file.close()
             self.logger_recognition_file.close()
-        print("log_file is closed")
+        self.logger.info("log_file is closed")
 
             

@@ -2,9 +2,11 @@ import cv2
 from multiprocessing import Process, Value, Array
 import numpy as np
 import time
+import logging
 
 class digimono_camera_position(object):
     def __init__(self, draw_color, type_shape, shape, mode):
+        self.logger = logging.getLogger(__name__)
         #初期化
         self.draw_color = tuple(draw_color) 
         if(np.sum(self.draw_color) < 180):
@@ -66,7 +68,7 @@ class digimono_camera_position(object):
             task.value = False
             while(task.value == False and end_flag.value == False):
                 time.sleep(0.02)
-        print("end_position_process")
+        self.logger.info("end_position_process")
     
     def draw_in_shape_position(self, frame, in_shape_position):
         return_frame = frame
@@ -75,7 +77,7 @@ class digimono_camera_position(object):
             return_frame = cv2.circle(frame, tuple(in_shape_position[num_position]), 18, tuple(self.draw_color), -1)
         return return_frame
 
-    def draw_shape(self, frame):
+    def draw_shape(self, frame, num):
         return_frame = frame
         if(self.type_shape == "rectangle"):
             left_up = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]-self.shape[1][1]))
@@ -85,10 +87,30 @@ class digimono_camera_position(object):
         elif(self.type_shape == "ellipse"):
             return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), (self.draw_sub_color), 3)
             return_frame = cv2.ellipse(frame, (tuple(self.shape[0]), (self.shape[1][0]*2, self.shape[1][1]*2),0), tuple(self.draw_color), 2)
-        name = self.mode
+        name = self.mode + " - " + str(num)
         text_position = ((self.shape[0][0]-self.shape[1][0]), (self.shape[0][1]+self.shape[1][1]+15))
         cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (self.draw_sub_color), 2)
         cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(self.draw_color), 1)
+        return return_frame
+
+    def add_draw_shape(self, frame, num, draw_color, type_shape, shape):
+        if(np.sum(draw_color) < 180):
+            draw_sub_color = (255,255,255)
+        else:
+            draw_sub_color = (0,0,0)
+        return_frame = frame
+        if(type_shape == "rectangle"):
+            left_up = ((shape[0][0]-shape[1][0]), (shape[0][1]-shape[1][1]))
+            right_down = ((shape[0][0]+shape[1][0]), (shape[0][1]+shape[1][1]))
+            return_frame = cv2.rectangle(frame, left_up, right_down, tuple(draw_sub_color), 3)
+            return_frame = cv2.rectangle(frame, left_up, right_down, tuple(draw_color), 2)
+        elif(type_shape == "ellipse"):
+            return_frame = cv2.ellipse(frame, (tuple(shape[0]), (shape[1][0]*2, shape[1][1]*2),0), tuple(draw_sub_color), 3)
+            return_frame = cv2.ellipse(frame, (tuple(shape[0]), (shape[1][0]*2, shape[1][1]*2),0), tuple(draw_color), 2)
+        name = "add - " + str(num)
+        text_position = ((shape[0][0]-shape[1][0]), (shape[0][1]+shape[1][1]+15))
+        cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(draw_sub_color), 2)
+        cv2.putText(return_frame, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, tuple(draw_color), 1)
         return return_frame
         
 

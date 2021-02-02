@@ -3,10 +3,12 @@ import cv2
 from multiprocessing import Manager, Value, Array, Event
 import time
 import numpy as np
+import logging
 class digimono_camera_mask(object):
 
     def __init__(self, draw_color):
         #初期化
+        self.logger = logging.getLogger(__name__)
         self.draw_color = tuple(draw_color)
         if(np.sum(self.draw_color) < 180):
             self.draw_sub_color = (255,255,255)
@@ -52,12 +54,12 @@ class digimono_camera_mask(object):
                         point.append([x, y])
 
                 if(len(contours) != len(point)):
-                    print("contours", contours, "point", point)
+                    self.logger.warning("contours", contours, "point", point)
             
             task.value = False
             while(task.value == False and end_flag.value == False):
                 time.sleep(0.02)
-        print("end_mask_process")
+        self.logger.info("end_mask_process")
 
     def draw_contours(self, edit_frame, contours, thickness):
         return_edit_frame = edit_frame.copy()

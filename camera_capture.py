@@ -5,9 +5,11 @@ import time
 import os
 import psutil
 import shutil
+import logging
 
 class digimono_camera_capture(object):
     def __init__(self, height, wide, fps, bool_processed, bool_master, record_time):
+        self.logger = logging.getLogger(__name__)
         self.wide = wide.value
         self.height = height.value
         if(bool_processed == True):
@@ -43,7 +45,7 @@ class digimono_camera_capture(object):
         if(psutil.disk_usage('/').used / self.total >= self.used_percent or (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) <= 1):
             if(self.bool_master == True):
                 if not os.path.isdir('result/'):
-                    print("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
+                    self.logger.error("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
                     while True:
                         pass
                 all_number_dir = False
@@ -54,22 +56,22 @@ class digimono_camera_capture(object):
                         files_dir_sort = sorted(files_dir, key=lambda x: datetime.date(datetime.datetime.strptime(x, '%Y-%m-%d').year, datetime.datetime.strptime(x, '%Y-%m-%d').month, datetime.datetime.strptime(x, '%Y-%m-%d').day))
                         all_number_dir = True
                     except ValueError:
-                        print("resultフォルダに日付フォルダ以外がある場合、エラーとなります。プログラムを終了してから日付フォルダ以外を削除してください")
+                        self.logger.error("resultフォルダに日付フォルダ以外がある場合、エラーとなります。プログラムを終了してから日付フォルダ以外を削除してください")
                         while True:
                             pass
                 for num in range(len(files_dir_sort)):
                     if(os.path.isdir('result/' + files_dir_sort[num])):
                         shutil.rmtree('result/' + files_dir_sort[num])
-                        print('result/' + files_dir_sort[num] + 'は容量不足のため削除されます。')
+                        self.logger.info('result/' + files_dir_sort[num] + 'は容量不足のため削除されます。')
                     if(psutil.disk_usage('/').used / self.total < self.used_percent and (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) > 2):
                         break
                 if(psutil.disk_usage('/').used / self.total >= self.used_percent or (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) <= 2):
-                    print("容量不足ですが、result内に削除するフォルダがないので、resultフォルダが削除されます。")
+                    self.logger.warning("容量不足ですが、result内に削除するフォルダがないので、resultフォルダが削除されます。")
                     time.sleep(30)
                     shutil.rmtree('result/')
-                    print("容量不足ですが、result内に削除するフォルダがないので、resultフォルダが削除されます。")
+                    self.logger.info("容量不足ですが、result内に削除するフォルダがないので、resultフォルダが削除されます。")
                     if(psutil.disk_usage('/').used / self.total >= self.used_percent or (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) <= 2):
-                        print("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
+                        self.logger.error("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
                         while True:
                             pass
             else:
@@ -78,9 +80,9 @@ class digimono_camera_capture(object):
         if not os.path.isdir(video_path):
             os.makedirs(video_path)
         writer = cv2.VideoWriter(video_name, video_format, self.fps, (self.wide, self.height))
-        print("record start")
+        self.logger.info("record start")
         self.ret.value = True
-        print("recording in " + str(video_name))
+        self.logger.info("recording in " + str(video_name))
         while(self.ret.value == True):
             while(task.value == False):
                 time.sleep(0.1)
@@ -91,7 +93,7 @@ class digimono_camera_capture(object):
             dt_now = datetime.datetime.now()
             dt = dt_now - dt_start
             if(dt.seconds >= self.record_time):
-                print(str(video_name) + "...finish")
+                self.logger.info(str(video_name) + "...finish")
                 writer.release()
                 dt_start = dt_now
                 video_path = 'result/' + str(datetime.datetime.today().date()) 
@@ -100,7 +102,7 @@ class digimono_camera_capture(object):
                 if(psutil.disk_usage('/').used / self.total >=self.used_percent or (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) <= 1):
                     if(self.bool_master == True):
                         if not os.path.isdir('result/'):
-                            print("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
+                            self.logger.error("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
                             while True:
                                 pass
                         all_number_dir = False
@@ -111,20 +113,20 @@ class digimono_camera_capture(object):
                                 files_dir_sort = sorted(files_dir, key=lambda x: datetime.date(datetime.datetime.strptime(x, '%Y-%m-%d').year, datetime.datetime.strptime(x, '%Y-%m-%d').month, datetime.datetime.strptime(x, '%Y-%m-%d').day))
                                 all_number_dir = True
                             except ValueError:
-                                print("resultフォルダに日付フォルダ以外がある場合、エラーとなります。プログラムを終了してから日付フォルダ以外を削除してください")
+                                self.logger.error("resultフォルダに日付フォルダ以外がある場合、エラーとなります。プログラムを終了してから日付フォルダ以外を削除してください")
                                 while True:
                                     pass
                         for num in range(len(files_dir_sort)):
                             if(os.path.isdir('result/' + files_dir_sort[num])):
                                 shutil.rmtree('result/' + files_dir_sort[num])
-                                print('result/' + files_dir_sort[num] + 'は容量不足のため削除されます。')
+                                self.logger.warning('result/' + files_dir_sort[num] + 'は容量不足のため削除されます。')
                             if(psutil.disk_usage('/').used / self.total < self.used_percent and (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) > 2):
                                 break
                         if(psutil.disk_usage('/').used / self.total >= self.used_percent or (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) <= 2):
                             shutil.rmtree('result/')
-                            print("容量不足ですが、result内に削除するフォルダがないので、resultフォルダが削除されます。")
+                            self.logger.warning("容量不足ですが、result内に削除するフォルダがないので、resultフォルダが削除されます。")
                             if(psutil.disk_usage('/').used / self.total >= self.used_percent or (psutil.disk_usage('/').free / (1024 * 1024 * 1024)) <= 2):
-                                print("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
+                                self.logger.error("容量不足ですが、resultフォルダがなく、削除するフォルダがありません。手動でその他のファイルを削除する必要があります。")
                                 while True:
                                     pass
                     else:
@@ -133,15 +135,15 @@ class digimono_camera_capture(object):
                 if not os.path.isdir(video_path):
                     os.makedirs(video_path)
                 writer = cv2.VideoWriter(video_name, video_format, self.fps, (self.wide, self.height))
-                print("recording in " + str(video_name))
+                self.logger.info("recording in " + str(video_name))
             put_frame = cv2.putText(frame[0], str(datetime.datetime.now()), (0,10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
             writer.write(put_frame)
             if(self.ret.value == False):
                 break
             task.value = False
         writer.release()
-        print("record_end")
-        print("end_record_process")
+        self.logger.info("record_end")
+        self.logger.info("end_record_process")
 
     def put_frame(self, in_frame):
         self.frame.append(in_frame)

@@ -1,11 +1,13 @@
 import logger
 import datetime
 import time
+import logging
 
 class digimono_user_code(object):
     #-------------------ここから下は通常呼び出されます------------------
     def __init__(self):
         #初期化する
+        self.logger = logging.getLogger(__name__)
         self.log = logger.digimono_logger("add") #ロガーファイルを作成するクラスをインスタンス化
         #ここから下がユーザーコードになります
 
@@ -21,7 +23,7 @@ class digimono_user_code(object):
     def error_rise(self, num):
         #例です
         #使用しない場合はpassを入れてください
-        print(num, "ERROR")
+        self.logger.info(str(num) +  "ERROR")
         self.log.l_error(num)
 
     #ERROR枠にinしたときのメソッド
@@ -37,7 +39,7 @@ class digimono_user_code(object):
     #認識枠にriseしたときのメソッド
     def recognition_rise(self, num):
         #例です
-        print(num, "RECOGNITION") 
+        self.logger.info(str(num) +  "RECOGNITION") 
         self.log.l_recognition(num)
     #認識枠にinしたときのメソッド
     def recognition_in(self, num):

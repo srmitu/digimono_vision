@@ -5,9 +5,11 @@ import cv2
 import time
 from datetime import datetime
 import psutil
+import logging
 
 class digimono_camera_frame(object):
     def __init__(self, camera_num, permit_show_video, permit_record_raw, record_time):
+        self.logger = logging.getLogger(__name__)
         self.frame = Manager().list()
         self.frame_height = Value('i', 0)
         self.frame_width = Value('i', 0)
@@ -71,7 +73,7 @@ class digimono_camera_frame(object):
         
         capture.release()
         time.sleep(0.5)
-        print("end_frame_process")
+        self.logger.info("end_frame_process")
 
     def show_edit_frame(self, edit_frame):
         cv2.namedWindow("FrameEdit", cv2.WINDOW_NORMAL)

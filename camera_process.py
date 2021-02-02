@@ -14,8 +14,11 @@ import shutil
 import os
 import csv
 from multiprocessing import Process, Value, Array, Manager
+import logging
+from copy import deepcopy
 class digimono_camera_process(object):
     def  __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.start_time = datetime.datetime.now().strftime('%Y-%m-%d')
         pass
 
@@ -77,6 +80,12 @@ class digimono_camera_process(object):
         self.display_time = False
         self.dt1=0
         self.dt2=0
+
+        self.add_num = -1
+        self.add_draw_color = -1
+        self.add_type_shape = "none"
+        self.add_shape = []
+        self.num_loop = 0
         
         self.end_flag_mask = []
         self.end_flag_position = []
@@ -214,45 +223,56 @@ class digimono_camera_process(object):
     def check_position_and_shape(self):
         #重心が枠に貼っているか確認
         multiple_block = False
+        self.num_loop += 1
+        if(self.num_loop == 4):
+            self.num_loop = 0
         for num in range(self.num_shape):
-            if(self.mode[num] == "START" and self.state[num] == ord('r')):#rise
-                if(self.cal_time == False and multiple_block == False):
-                    self.cal_time = True
-                    self.display_time = True
-                    multiple_block = True
-                    self.log.l_start(num)
-                    self.dt1 = datetime.datetime.now()
-                    self.user.start_rise(num)
+            if not (num == self.add_num):
+                if(self.mode[num] == "START" and self.state[num] == ord('r')):#rise
+                    if(self.cal_time == False and multiple_block == False):
+                        self.cal_time = True
+                        self.display_time = True
+                        multiple_block = True
+                        self.log.l_start(num)
+                        self.dt1 = datetime.datetime.now()
+                        self.user.start_rise(num)
 
-            elif(self.mode[num] == "END" and self.state[num] == ord('r')):#rise
-                if(self.cal_time == True and multiple_block == False):
-                    self.cal_time = False
-                    multiple_block = True
-                    self.log.l_end(num)
-                    self.dt2 = datetime.datetime.now()
-                    self.user.end_rise(num, self.dt2 - self.dt1)
-            elif(self.mode[num] == "ERROR"):
-                #条件に応じてユーザーコードを実行します
-                if(self.state[num] == ord('r')):
-                    self.user.error_rise(num)
-                elif(self.state[num] == ord('i')):
-                    self.user.error_in(num)
-                elif(self.state[num] == ord('o')):
-                    self.user.error_out(num)
-                elif(self.state[num] == ord('f')):
-                    self.user.error_fall(num)
-            elif(self.mode[num] == "RECOGNITION"):
-                #条件に応じてユーザーコードを実行します
-                if(self.state[num] == ord('r')):
-                    self.user.recognition_rise(num)
-                elif(self.state[num] == ord('i')):
-                    self.user.recognition_in(num)
-                elif(self.state[num] == ord('o')):
-                    self.user.recognition_out(num)
-                elif(self.state[num] == ord('f')):
-                    self.user.recognition_fall(num)
-    
-            self.frame = self.digi_position_l[num].draw_shape(self.frame)
+                elif(self.mode[num] == "END" and self.state[num] == ord('r')):#rise
+                    if(self.cal_time == True and multiple_block == False):
+                        self.cal_time = False
+                        multiple_block = True
+                        self.log.l_end(num)
+                        self.dt2 = datetime.datetime.now()
+                        self.user.end_rise(num, self.dt2 - self.dt1)
+                elif(self.mode[num] == "ERROR"):
+                    #条件に応じてユーザーコードを実行します
+                    if(self.state[num] == ord('r')):
+                        self.user.error_rise(num)
+                    elif(self.state[num] == ord('i')):
+                        self.user.error_in(num)
+                    elif(self.state[num] == ord('o')):
+                        self.user.error_out(num)
+                    elif(self.state[num] == ord('f')):
+                        self.user.error_fall(num)
+                elif(self.mode[num] == "RECOGNITION"):
+                    #条件に応じてユーザーコードを実行します
+                    if(self.state[num] == ord('r')):
+                        self.user.recognition_rise(num)
+                    elif(self.state[num] == ord('i')):
+                        self.user.recognition_in(num)
+                    elif(self.state[num] == ord('o')):
+                        self.user.recognition_out(num)
+                    elif(self.state[num] == ord('f')):
+                        self.user.recognition_fall(num)
+        
+                self.frame = self.digi_position_l[num].draw_shape(self.frame, num)
+            else:
+                if(self.num_loop >= 2):
+                    self.frame = self.digi_position_l[0].add_draw_shape(self.frame, self.add_num, self.add_draw_color, self.add_type_shape, self.add_shape)
+        if(self.add_num > 0 and self.add_num >= self.num_shape):
+            if(self.num_loop >= 2):
+                self.frame = self.digi_position_l[0].add_draw_shape(self.frame, self.add_num, self.draw_color[self.add_draw_color], self.add_type_shape, self.add_shape)
+            
 
     def calculate_cycle_time(self):
         #サイクルタイム計算の処理
@@ -263,10 +283,42 @@ class digimono_camera_process(object):
         if(self.display_time == True):
             if(self.cal_time == True):
                 self.dt2=datetime.datetime.now()
-            #print(dt2 - dt1)
             dt=str(self.dt2 - self.dt1)
             cv2.putText(self.frame, dt, (10,480), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 3)
+    
+    def reset_add(self):
+        self.add_num = -1
+        self.add_draw_color = -1
+        self.add_type_shape = "none"
+        self.add_shape = []
 
+    def put_add_shape(self, num, color, type_shape, shape):
+        error = -1
+        self.add_num = num
+        if(color < self.num_color):
+            self.add_draw_color = color
+        else:
+            error = 0
+        if(type_shape == "rectangle"):
+            self.add_type_shape = "rectangle"
+        elif(type_shape == "ellipse"):
+            self.add_type_shape = "ellipse"
+        else:
+            error = 0
+        if(len(shape) == 2):
+            if(len(shape[0]) == 2 and len(shape[1]) == 2):
+                if(shape[1][0] >= 0 and shape[1][1] >= 0):
+                    self.add_shape = deepcopy(shape)
+                else:
+                    error = 0
+            else:
+                error = 0
+        else:
+            error = 0
+        if(error >= 0):
+            self.logger.warning("bad arguments")
+            self.reset_add()
+             
     def user_frame(self):
         self.frame = self.user.edit_frame(self.frame)
 
@@ -343,7 +395,6 @@ class digimono_camera_process(object):
         lastest_error_file = max(list_of_error_files, key=os.path.getctime)
         list_of_recognition_files = glob.glob(path + 'recognition_*')
         lastest_recognition_file = max(list_of_recognition_files, key=os.path.getctime)
-        #print(lastest_cycle_file, lastest_error_file, lastest_recognition_file)
         #サイクルタイムに関するログを取得します。
         cycle_file = open((lastest_cycle_file), 'r', encoding="utf-8")
         cycle_reader = csv.reader(cycle_file)
@@ -369,7 +420,6 @@ class digimono_camera_process(object):
             self.error_data = error_data[2:]
         if not (len(recognition_data) <= 2):
             self.recognition_data = recognition_data[2:]
-        #print(self.cycle_data, self.error_data, self.recognition_data)
 
     #ログをもとにサイクルタイムが遅い順に並び替えて上から必要な数だけ取り出します。
     def pickup_log_cycle_slow(self, how_many):
@@ -412,7 +462,6 @@ class digimono_camera_process(object):
                     if((self.sorted_video_files[num_result] in self.video_result) == False):
                         self.video_result.append(self.sorted_video_files[num_result])
                 end_ok = False
-        #print(self.video_result)
     #サイクルタイムのdataをもとに必要な加工の動画を取り出す。
     def pickup_cycle_processed(self, cycle_data):
         end_ok = False
@@ -434,7 +483,6 @@ class digimono_camera_process(object):
                     if((self.sorted_processed_files[num_result] in self.processed_result) == False):
                         self.processed_result.append(self.sorted_processed_files[num_result])
                 end_ok = False
-        #print(self.video_result)
     #errorや認識のdataをもとに必要なもとの動画を取り出す。
     def pickup_error_recognition_video(self, data):
         end_ok = False
@@ -452,7 +500,6 @@ class digimono_camera_process(object):
                     if((self.sorted_video_files[num_result] in self.video_result) == False):
                         self.video_result.append(self.sorted_video_files[num_result])
                 end_ok = False
-        #print(self.video_result)
     #errorや認識のdataをもとに必要な加工の動画を取り出す。
     def pickup_error_recognition_processed(self, data):
         end_ok = False
@@ -470,9 +517,6 @@ class digimono_camera_process(object):
                     if((self.sorted_processed_files[num_result] in self.processed_result) == False):
                         self.processed_result.append(self.sorted_processed_files[num_result])
                 end_ok = False
-        #print(self.video_result)
-
-
 
     #取り出したものを推薦フォルダ(recommend)にコピーする
     def copy_to_recommend(self):
@@ -491,7 +535,7 @@ class digimono_camera_process(object):
             if(total <= 4*1000*1000*1000):
                 break
             else:
-                print("remove", sorted_list_files[0])
+                self.logger.warning("remove", sorted_list_files[0])
                 os.remove(sorted_list_files[0])
         #推薦フォルダの中にあるフォルダの中身が空の場合自動削除
         files = os.listdir('recommend/')

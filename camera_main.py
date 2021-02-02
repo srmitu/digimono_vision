@@ -5,10 +5,12 @@ import cv2
 from datetime import datetime
 import time
 import colorsys
+import logging
 import psutil
 
 class digimono_camera_main(object):
     def  __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.digi_process = camera_process.digimono_camera_process()
         self.digi_process.read_config()
         self.digi_process.load_class()
@@ -41,7 +43,7 @@ class digimono_camera_main(object):
         #maskを処理するプロセスを開始する
         self.digi_process.start_mask_process()
         #startしたことを知らせる
-        print("----------------start---------------------")
+        self.logger.info("----------------start---------------------")
 
     def main_init_color(self):
         self.key = -1
@@ -73,7 +75,7 @@ class digimono_camera_main(object):
         self.w_m = 0
         self.h_m = 0
         self.digi_process.color_detect_start(self.left, self.right, self.up, self.down)
-        print("----------------start_calibration---------------------")
+        self.logger.info("----------------start_calibration---------------------")
         
     def get_frame_normal(self):
         #maskを処理するプロセスからの終了処理を受け取り、値を更新する
@@ -117,17 +119,17 @@ class digimono_camera_main(object):
                 self.color_capture_already = False
                 self.old_color_capture_already = False
             if(self.old_color_capture == False):
-                print("----------------calibration---------------------")
+                self.logger.info("----------------calibration---------------------")
                 self.num_color_detect = 0
                 self.old_color_capture = True
             if(self.num_color_detect >= (self.digi_process.color_detect_num_attempt / (abs(self.color_mode)+1))):
                 if(self.old_state == False):
                     self.old_state = True
-                    print("color_record_end")
+                    self.logger.info("color_record_end")
                 if(self.digi_process.wait_task() == False):
                     #mode = 0
                     self.color_detect_end(self.color_mode)
-                    print("----------------calibration_end---------------------")
+                    self.logger.info("----------------calibration_end---------------------")
                     self.old_state = False
                     self.color_capture = False
                     self.old_color_capture = False
@@ -138,7 +140,7 @@ class digimono_camera_main(object):
                 self.color_detect()
                 self.num_color_detect += 1
         elif(self.color_undo == True):
-            print("----------------undo or redo---------------------")
+            self.logger.info("----------------undo or redo---------------------")
             if(self.color_capture_already == True):
                 #maskのみリブート
                 self.clear_mask_process()
@@ -148,7 +150,7 @@ class digimono_camera_main(object):
             self.color_undo = False
             self.color_capture_already = True
         elif(self.color_change == True):
-            print("----------------color_change---------------------")
+            self.logger.info("----------------color_change---------------------")
             if(self.color_capture_already == True):
                 #maskのみリブート
                 self.clear_mask_process()
@@ -180,7 +182,8 @@ class digimono_camera_main(object):
             return_frame = self.digi_process.frame
             return_frame = cv2.putText(return_frame, str(len(self.digi_process.point[0])), (500,40), cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
             return_frame = cv2.putText(return_frame, str(len(self.digi_process.point[0])), (500,40), cv2.FONT_HERSHEY_PLAIN, 3, (0,0,0), 2)
-        if(return_frame == []):
+        #if (return_frame == []):
+        if(len(return_frame)==0):
             return_frame = self.digi_frame.get_frame()
         shape = self.digi_process.color_detect_shape
         return_frame = cv2.rectangle(return_frame, tuple([self.left + self.w_m, self.up + self.h_m]), tuple([self.right + self.w_m, self.down + self.h_m]), (255,255,255), 5)
@@ -221,12 +224,12 @@ class digimono_camera_main(object):
         self.digi_process.color_detect_end(mode)
 
     def reboot(self):
-        print("----------------reboot---------------------")
+        self.logger.info("----------------reboot---------------------")
         #まずは終了させる
         if(self.digi_process.color_detect == False and self.digi_process.permit_record_processed == True):
             self.digi_record.ret.value = False
         self.clear_process()
-        time.sleep(3)
+        time.sleep(2.5)
         #再起動（再定義）する
         self.__init__()
         self.digi_process.reboot_finish()
@@ -289,12 +292,12 @@ class digimono_camera_main(object):
             if(self.key == ord('r')):
                 self.key = -1
                 return_bool= True
-                print("reboot request from key")
+                self.logger.debug("reboot request from key")
         
         if(self.comm_reboot_check == True):
             self.comm_reboot_check = False
             return_bool = True
-            print("reboot request")
+            self.logger.info("reboot request")
         
         return return_bool
 
@@ -304,11 +307,11 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('c')):
                 return_bool = True
-                print("color capture from key")
+                self.logger.info("color capture from key")
         if(self.comm_color_capture == True):
             self.comm_color_capture = False
             return_bool = True
-            print("color capture")
+            self.logger.info("color capture")
 
         return return_bool
 
@@ -317,11 +320,11 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('u')):
                 return_bool = True
-                print("undo or redo from key")
+                self.logger.info("undo or redo from key")
         if(self.comm_color_undo == True):
             self.comm_color_undo = False
             return_bool = True
-            print("undo or redo")
+            self.logger.info("undo or redo")
         return return_bool
 
     def color_mode_check(self):
@@ -329,13 +332,13 @@ class digimono_camera_main(object):
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('p')):
                 return_mode = 1
-                print("mode is + from key")
+                self.logger.info("mode is + from key")
             elif(self.key == ord('n')):
                 return_mode = 0
-                print("mode is none from key")
+                self.logger.info("mode is none from key")
             elif(self.key == ord('m')):
                 return_mode = -1
-                print("mode is - from key")
+                self.logger.info("mode is - from key")
         elif(self.comm_color_mode != self.color_mode):
             return_mode = self.comm_color_mode
 
@@ -366,42 +369,41 @@ class digimono_camera_main(object):
         bool_chage = False
         if(self.digi_process.permit_show_processed == True):
             if(self.key == ord('i')):
-                print()
                 y_or_n_one_threshold = input("しきい値のH(色相)は1種類だけですか?[y/n]: ")
                 if(y_or_n_one_threshold == 'y'):
                     error_time = 0
                     try:
                         h_max, h_min = (int(x) for x in input("しきい値のH(色相)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
                         if not ((h_max <= 180 and h_max >= 0) and (h_min <= 180 and h_min >= 0)):
-                            print("数字は0〜180の間である必要があります。操作はキャンセルされます。")
+                            self.logger.warning("数字は0〜180の間である必要があります。操作はキャンセルされます。")
                             error_time = 1
                         if(h_max < h_min and error_time == 0):
                             h_max, h_min = h_min, h_max
                     except ValueError:
                         error_time = 1
-                        print("無効な数字です。操作はキャンセルされます。")
+                        self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         try:
                             s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
                             if not ((s_max <= 256 and s_max >= 0) and (s_min <= 256 and s_min >= 0)):
-                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                self.logger.warning("数字は0〜256の間である必要があります。操作はキャンセルされます。")
                                 error_time = 1
                             if(s_max < s_min and error_time == 0):
                                 s_max, s_min = s_min, s_max
                         except ValueError:
                             error_time = 1
-                            print("無効な数字です。操作はキャンセルされます。")
+                            self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         try:
                             v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
                             if not ((v_max <= 256 and v_max >= 0) and (v_min <= 256 and v_min >= 0)):
-                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                self.logger.warning("数字は0〜256の間である必要があります。操作はキャンセルされます。")
                                 error_time = 1
                             if(v_max < v_min and error_time == 0):
                                 v_max, v_min = v_min, v_max
                         except ValueError:
                             error_time = 1
-                            print("無効な数字です。操作はキャンセルされます。")
+                            self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         return_threshold = [[h_max, s_max, v_max], [h_min, s_min, v_min]]
                         bool_chage = True
@@ -410,51 +412,51 @@ class digimono_camera_main(object):
                     try:
                         h1_max, h1_min = (int(x) for x in input("しきい値のH(色相)の1つめの最大、最小を順に入力してください(スペースで区切ってください、90未満の数字にしてください): ").split())
                         if not ((h1_max <= 90 and h1_max >= 0) and (h1_min <= 90 and h1_min >= 0)):
-                            print("数字は0〜90の間である必要があります。操作はキャンセルされます。")
+                            self.logger.warning("数字は0〜90の間である必要があります。操作はキャンセルされます。")
                             error_time = 1
                         if(h1_max < h1_min and error_time == 0):
                             h1_max, h1_min = h1_min, h1_max
                     except ValueError:
                         error_time = 1
-                        print("無効な数字です。操作はキャンセルされます。")
+                        self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         try:
                             h2_max, h2_min = (int(x) for x in input("しきい値のH(色相)の2つ目の最大、最小を順に入力してください(スペースで区切ってください、90以上の数字にしてください): ").split())
                             if not ((h2_max <= 180 and h2_max >= 90) and (h2_min <= 180 and h2_min >= 90)):
-                                print("数字は90~180の間である必要があります。操作はキャンセルされます。")
+                                self.logger.warning("数字は90~180の間である必要があります。操作はキャンセルされます。")
                                 error_time = 1
                             if(h2_max < h2_min and error_time == 0):
                                 h2_max, h2_min = h2_min, h2_max
                         except ValueError:
                             error_time = 1
-                            print("無効な数字です。操作はキャンセルされます。")
+                            self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         try:
                             s_max, s_min = (int(x) for x in input("しきい値のS(彩度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
                             if not ((s_max <= 256 and s_max >= 0) and (s_min <= 256 and s_min >= 0)):
-                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                self.logger.warning("数字は0〜256の間である必要があります。操作はキャンセルされます。")
                                 error_time = 1
                             if(s_max < s_min and error_time == 0):
                                 s_max, s_min = s_min, s_max
                         except ValueError:
                             error_time = 1
-                            print("無効な数字です。操作はキャンセルされます。")
+                            self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         try:
                             v_max, v_min = (int(x) for x in input("しきい値のV(明度)の最大、最小を順に入力してください(スペースで区切ってください): ").split())
                             if not ((v_max <= 256 and v_max >= 0) and (v_min <= 256 and v_min >= 0)):
-                                print("数字は0〜256の間である必要があります。操作はキャンセルされます。")
+                                self.logger.warning("数字は0〜256の間である必要があります。操作はキャンセルされます。")
                                 error_time = 1
                             if(v_max < v_min and error_time == 0):
                                 v_max, v_min = v_min, v_max
                         except ValueError:
                             error_time = 1
-                            print("無効な数字です。操作はキャンセルされます。")
+                            self.logger.warning("無効な数字です。操作はキャンセルされます。")
                     if(error_time == 0):
                         return_threshold = [[h1_max, s_max, v_max], [h1_min, s_min, v_min], [h2_max, s_max, v_max], [h2_min, s_min, v_min]]
                         bool_chage = True
                 else:
-                    print("操作がキャンセルされました。")
+                    self.logger.warning("操作がキャンセルされました。")
         elif(self.comm_color_threshold != self.color_threshold):
             return_threshold = self.comm_color_threshold
             bool_chage = True
@@ -527,6 +529,12 @@ class digimono_camera_main(object):
     def put_color_throeshold(self, threshold):
         if(len(threshold) == 2 or len(threshold) == 4):
             self.comm_threshold = threshold
+
+    def put_add_shape(self, num, color, type_shape, shape):
+        self.digi_process.put_add_shape(num, color, type_shape, shape)
+
+    def reset_add(self):
+        self.digi_process.reset_add()
     
     def main_end(self):
         if(self.digi_process.permit_color_detect == False and self.digi_process.permit_record_processed == True):
@@ -536,12 +544,13 @@ class digimono_camera_main(object):
         self.digi_process.user_end()
         time.sleep(1)
         self.digi_process.recommend()
-        print("----------------end---------------------")
+        self.logger.info("----------------end---------------------")
 
 #GUIなしで起動
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     digi_main = digimono_camera_main()
-    digi_main.force_show_processed() 
     while digi_main.get_ret():
+        digi_main.force_show_processed() 
         digi_main.get_frame()
     digi_main.main_end()
